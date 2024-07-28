@@ -7,10 +7,25 @@ import crypto
 from network import WLAN
 from network import Bluetooth
 import machine
+import ustruct, ubinascii, uhashlib
+import _thread
 
 '''
 Implemented of LoPy4/Fipy with 1.18 pycom-micropython version
 '''
+######### Utility Functions #######################
+def get_node_id(hex=False):
+    """
+    Get node id, which consists of four bytes unsigned int.
+    Return as hex, according to parameter.
+    """
+    node_id = ubinascii.hexlify(uhashlib.sha1(
+        machine.unique_id()).digest()).decode("utf-8")[-8:]
+    if hex:
+        return node_id
+    else:
+        return int(node_id, 16)
+
 
 ######### Initialize the device #######################
 lora = LoRa(mode=LoRa.LORA,power_mode=LoRa.ALWAYS_ON,region=LoRa.EU868)
@@ -25,9 +40,20 @@ bluetooth.deinit()
 
 
 ######### Own node's information #####################
-my_number=2
-source_address='Mac'+str(my_number)
-number_of_neighbours=3
+if get_node_id() == 1068904481:
+    my_number=1
+    source_address='Mac'+str(my_number)
+    print('I am node Mac1')
+elif get_node_id() == 829745241:
+    my_number=2
+    source_address='Mac'+str(my_number)
+    print('I am node Mac2')
+elif get_node_id() == 2214365277:
+    my_number=3
+    source_address='Mac'+str(my_number)
+    print('I am node Mac3')
+
+number_of_neighbours=2
 
 
 ######### Initialize the timers #######################
@@ -139,18 +165,22 @@ def cca(x=packet_gap_interval,f=lora_off_time,c=cca_list,d=chrono,l=lora,h=cca_d
 neighbour_discover=False
 neighbor_adresses=[]
 while not neighbour_discover:
-    number=int(RandomRange(1, 2))
+    print('Discovering Neighbours')
+    number=int(RandomRange(1, 4))
+    print(number, my_number)
     if number!=my_number:
         neighbor='Mac'+str(number)
-        #if neighbor not in neighbor_adresses
-        neighbor_adresses.append(neighbor)
-        if len(neighbor_adresses)==number_of_neighbours:
-            break
+        print('Neighbor Mac{} added to the list'.format (neighbor))
+        if neighbor not in neighbor_adresses:
+            neighbor_adresses.append(neighbor)
+            if len(neighbor_adresses)==number_of_neighbours:
+                break
+    time.sleep(1)
 print(neighbor_adresses)
 Broadcast_address='All'
 neighbor=0
 
-
+print('Initialising Contiki MAC')
 ############# Contiki MAC #########################
 while True:
     chrono.start()
