@@ -58,15 +58,15 @@ number_of_neighbours=2
 
 ######### Initialize the timers #######################
 chrono = Timer.Chrono()
-chrono1=Timer.Chrono()
-chrono2=Timer.Chrono()
-chrono3=Timer.Chrono()
+chrono1 = Timer.Chrono()
+chrono2 = Timer.Chrono()
+chrono3 = Timer.Chrono()
 
 ############ Configurable Parameters #################
 wakeup_interval=20
 fast_sleep_threshold=2.5
-transmission_type='Unicast'#Unicast or Broadcast
-num_of_packets=4
+transmission_type='Broadcast'#Unicast or Broadcast
+num_of_packets=10
 pll_threshold=7
 cca_duration=0.08
 cca_interval=0.4
@@ -133,12 +133,15 @@ def packet_check(s=Awake_instance,g=packet_number,h=source_address,f=num_of_pack
 
 ############## Clear Channel Assessment ################
 def cca(x=packet_gap_interval,f=lora_off_time,c=cca_list,d=chrono,l=lora,h=cca_duration,m=rssi_threshold,n=cca_interval):
+    print('Checking Channel')
     chrono1.start()
     while chrono1.read()<cca_duration:
         c.append(str(lora.ischannel_free(-rssi_threshold)))
+        print('RSSI during CCA {}'.format (lora.stats()[1]))
     chrono1.stop()
     chrono1.reset()
     chrono.stop()
+    print('cca list', c)
     if 'False' in cca_list:
         return False
     else:
@@ -152,6 +155,7 @@ def cca(x=packet_gap_interval,f=lora_off_time,c=cca_list,d=chrono,l=lora,h=cca_d
         chrono1.start()
         while chrono1.read()<cca_duration:
             c.append(str(lora.ischannel_free(-rssi_threshold)))
+            print('RSSI during CCA {}'.format (lora.stats()[1]))
         chrono1.stop()
         chrono1.reset()
         if 'False' in cca_list:
@@ -176,7 +180,7 @@ while not neighbour_discover:
             if len(neighbor_adresses)==number_of_neighbours:
                 break
     time.sleep(1)
-print(neighbor_adresses)
+print('Neighbour Addresses:', neighbor_adresses)
 Broadcast_address='All'
 neighbor=0
 
@@ -192,7 +196,8 @@ while True:
         ss=s.recv(packet_size)
         events=lora.events()
 
-
+    print('Channel Status:', channel_status), 
+    print('Packet Status:', packet_status)
     if channel_status and packet_status and not only_listen:
         ########### Transmit Data ##########################
         lora = LoRa(power_mode=LoRa.ALWAYS_ON,region=LoRa.EU868)
@@ -223,7 +228,7 @@ while True:
                 while float(phase_lock_optimization_time.get(destination_address))-sleep_in_pll > chrono.read():
                     lora = LoRa(power_mode=LoRa.SLEEP,region=LoRa.EU868)
 
-                while not ack and chrono.read()< max_wait_time:
+                while not ack and chrono.read() < max_wait_time:
                     if float(phase_lock_optimization_time.get(destination_address))-transmission_in_pll <= chrono.read() and phase_lock_transmissions<pll_threshold:
                         ########### Transmission with PLL ##########################
                         if channel_checked:
@@ -295,7 +300,7 @@ while True:
 
             else:
                 ########### Transmission without PLL ##########################
-                while not ack and chrono.read()< max_wait_time:
+                while not ack and chrono.read() < max_wait_time:
                     ########### Transmission continue until the acknowledgement ##########################
                     packet1=source_address+' ' +' '+ destination_address+' ' + data + str(packet_number) +' '+str(send_time)+' '+str(chrono.read())+' '
                     padding=packet_size-len(packet1)
@@ -381,7 +386,8 @@ while True:
             safe_time=packet_gap_interval+lora_off_time
 
             ########### Broadcast Transmission continue during full wake up interval ##########################
-            while chrono.read()< wakeup_interval-safe_time:
+            while chrono.read() < wakeup_interval-safe_time:
+                print('chrono:', chrono.read(), wakeup_interval-safe_time)
                 data = ' Data '
                 packet1=source_address+' ' +' '+ destination_address+' ' + data + str(packet_number) +' '+str(send_time)+' '
                 padding=packet_size-len(packet1)
@@ -425,7 +431,7 @@ while True:
         print('Receiving Data')
         time_now=chrono3.read()
 
-        ########### Fast sleep optimization ##########################
+        ########## Fast sleep optimization ##########################
         while chrono3.read()<(packet_gap_interval*1.1+time_now):
             cca_list.append(str(lora.ischannel_free(-100)))
             if cca_list.count('True')<=10 and chrono3.read()>(packet_gap_interval+time_now):
@@ -450,6 +456,7 @@ while True:
         rcv_packet=str(s.recv(packet_size))
         rcv_packet=rcv_packet[2:-1]
         decode_packet=rcv_packet.split()
+        print('decoded packet', decode_packet)
         if len(decode_packet)>=6:
             receiving_data= decode_packet[0] + ' '+decode_packet[2] +' '+decode_packet[3]
 
@@ -476,6 +483,8 @@ while True:
         alive_time+=chrono.read()
         print('Awake_instance {}'.format (Awake_instance))
         print('Source_address {}'.format (source_address))
+        if len(received_full_data)>0:
+            print('Sender_address {}'.format (received_full_data[-1][0]))   ### source address of sender
         print('Alive_time {}'.format (alive_time))
         print('Packets {}'.format (packet_number))
         print('Duty_Cycle {}'.format ((alive_time/3600)*100))
