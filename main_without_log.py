@@ -46,7 +46,7 @@ if get_node_id() == 235968217:
     print('I am node Mac1')
 elif get_node_id() == 829745241:
     my_number = 2
-    source_address='Mac' + str(my_number)
+    source_address = 'Mac' + str(my_number)
     print('I am node Mac2')
 elif get_node_id() == 50989579:
     my_number = 3
@@ -65,14 +65,13 @@ chrono3 = Timer.Chrono()
 ############ Configurable Parameters #################
 wakeup_interval = 20
 fast_sleep_threshold = 2.5
-transmission_type = 'Broadcast'#Unicast or Broadcast
+transmission_type = 'Broadcast'  #Unicast or Broadcast
 num_of_packets = 10
 pll_threshold = 7
 cca_duration = 0.08
 cca_interval = 0.4
 rssi_threshold = 100
-packet_size = 255 ## bytes
-
+packet_size = 255  # bytes
 
 ############ Configuring the device ####################
 packet_number = 1
@@ -104,7 +103,7 @@ pll_activation = 2.0
 sleep_in_pll = 1.9
 transmission_in_pll = 1.8
 
-############## Delay to avoid CCA overalap ############
+############## Delay to avoid CCA overlap ############
 number2 = (wakeup_interval - 2) / 10
 print((my_number - 1) * number2)
 time.sleep((my_number - 1) * number2)
@@ -118,8 +117,6 @@ def Random():
 
 def RandomRange(rfrom, rto):
     return Random() * (rto - rfrom) + rfrom
-
-
 
 ############## Random packet generation ################
 def packet_check(packet_status, s=Awake_instance, g=packet_number):
@@ -135,7 +132,7 @@ def packet_check(packet_status, s=Awake_instance, g=packet_number):
 
 
 ############## Clear Channel Assessment ################
-def cca(x=packet_gap_interval, f=lora_off_time, c=cca_list, d=chrono,l=lora, h=cca_duration, m=rssi_threshold, n=cca_interval):
+def cca(x=packet_gap_interval, f=lora_off_time, c=cca_list, d=chrono, l=lora, h=cca_duration, m=rssi_threshold, n=cca_interval):
     print('Checking Channel')
     chrono1.start()
     while chrono1.read() < cca_duration:
@@ -180,12 +177,13 @@ while not neighbour_discover:
     print(number, my_number)
     if number != my_number:
         neighbor = 'Mac' + str(number)
-        print('Neighbor Mac{} added to the list'.format (neighbor))
+        print('Neighbor Mac{} added to the list'.format(neighbor))
         if neighbor not in neighbor_adresses:
             neighbor_adresses.append(neighbor)
             if len(neighbor_adresses) == number_of_neighbours:
                 break
     time.sleep(1)
+
 print('Neighbour Addresses:', neighbor_adresses)
 Broadcast_address = 'All'
 neighbor = 0
@@ -204,7 +202,7 @@ while True:
         ss = s.recv(packet_size)
         events = lora.events()
 
-    print('Channel Status:', channel_status) 
+    print('Channel Status:', channel_status)
     print('Packet Status:', packet_status)
     if channel_status and packet_status and not only_listen:
         ########### Transmit Data ##########################
@@ -230,21 +228,20 @@ while True:
             phase_lock_transmissions = 0
 
             ############ Condition to use PLL implementation
-            if destination_address in phase_lock_optimization_time and float(phase_lock_optimization_time.get(destination_address)) >= pll_activation :
+            if destination_address in phase_lock_optimization_time and float(phase_lock_optimization_time.get(destination_address)) >= pll_activation:
                 ########### PLL optimization ##########################
                 while float(phase_lock_optimization_time.get(destination_address)) - sleep_in_pll > chrono.read():
                     lora = LoRa(power_mode=LoRa.SLEEP, region=LoRa.EU868)
-
                 while not ack and chrono.read() < max_wait_time:
                     if float(phase_lock_optimization_time.get(destination_address)) - transmission_in_pll <= chrono.read() and phase_lock_transmissions < pll_threshold:
                         ########### Transmission with PLL ##########################
                         if channel_checked:
-                            phase_lock_time_saving = phase_lock_time_saving+chrono.read() - cca_time
+                            phase_lock_time_saving = phase_lock_time_saving + chrono.read() - cca_time
                             channel_checked = False
                             lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
 
                             if cca():
-                                ########### Chaneel is free and transmission with PLL starts ##########################
+                                ########### Channel is free and transmission with PLL starts ##########################
                                 packet1 = source_address + ' ' + ' ' + destination_address + ' ' + data + str(packet_number) + ' ' + str(send_time) + ' ' + str(chrono.read()) + ' '
                                 padding = packet_size - len(packet1)
                                 zero_padding = '0' * padding
@@ -374,7 +371,7 @@ while True:
             chrono.stop()
             chrono.reset()
             print(chrono3.read())
-            
+
             if chrono3.read() > wakeup_interval:
                 insatnce = chrono3.read() // wakeup_interval
                 Awake_instance += insatnce
