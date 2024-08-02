@@ -40,7 +40,7 @@ bluetooth.deinit()
 
 
 ######### Own node's information #####################
-if get_node_id() == 1068904481:
+if get_node_id() == 235968217:
     my_number=1
     source_address='Mac'+str(my_number)
     print('I am node Mac1')
@@ -48,7 +48,7 @@ elif get_node_id() == 829745241:
     my_number=2
     source_address='Mac'+str(my_number)
     print('I am node Mac2')
-elif get_node_id() == 2214365277:
+elif get_node_id() == 50989579:
     my_number=3
     source_address='Mac'+str(my_number)
     print('I am node Mac3')
@@ -122,12 +122,15 @@ def RandomRange(rfrom, rto):
 
 
 ############## Random packet generation ################
-def packet_check(s=Awake_instance,g=packet_number,h=source_address,f=num_of_packets):
-    number=int(RandomRange(1, 30))
-    if packet_number<num_of_packets and 4<number<20:
-        return True
+def packet_check(packet_status, s=Awake_instance,g=packet_number):
+    if not packet_status:
+        number=(Awake_instance % 4) - my_number
+        if packet_number<num_of_packets and (number == 0):
+            return True
+        else:
+            return False
     else:
-        return False
+        return packet_status
 
 
 
@@ -137,11 +140,11 @@ def cca(x=packet_gap_interval,f=lora_off_time,c=cca_list,d=chrono,l=lora,h=cca_d
     chrono1.start()
     while chrono1.read()<cca_duration:
         c.append(str(lora.ischannel_free(-rssi_threshold)))
-        print('RSSI during CCA {}'.format (lora.stats()[1]))
+        # print('RSSI during CCA {}'.format (lora.stats()[1]))
     chrono1.stop()
     chrono1.reset()
     chrono.stop()
-    print('cca list', c)
+    # print('cca list', c)
     if 'False' in cca_list:
         return False
     else:
@@ -155,7 +158,7 @@ def cca(x=packet_gap_interval,f=lora_off_time,c=cca_list,d=chrono,l=lora,h=cca_d
         chrono1.start()
         while chrono1.read()<cca_duration:
             c.append(str(lora.ischannel_free(-rssi_threshold)))
-            print('RSSI during CCA {}'.format (lora.stats()[1]))
+            # print('RSSI during CCA {}'.format (lora.stats()[1]))
         chrono1.stop()
         chrono1.reset()
         if 'False' in cca_list:
@@ -185,12 +188,13 @@ Broadcast_address='All'
 neighbor=0
 
 print('Initialising Contiki MAC')
+packet_status=False
 ############# Contiki MAC #########################
 while True:
     chrono.start()
     chrono3.start()
     channel_status=cca(chrono,cca_list)
-    packet_status=packet_check(Awake_instance,packet_number)
+    packet_status=packet_check(packet_status, Awake_instance,packet_number)
     lora = LoRa(power_mode=LoRa.ALWAYS_ON,region=LoRa.EU868)
     while len(s.recv(packet_size))>0:
         ss=s.recv(packet_size)
@@ -424,6 +428,7 @@ while True:
             chrono3.stop()
             chrono3.reset()
             print(' ')
+        packet_status=False
 
     elif not channel_status :
         ########### Packet transmission detected and set to receive moode ##########################
