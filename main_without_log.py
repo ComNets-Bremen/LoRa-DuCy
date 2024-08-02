@@ -354,7 +354,6 @@ while True:
                 ########### Identify transmission failures ##########################
                 failed_attempts += 1
 
-
             alive_time += chrono.read()
             print('Awake_instance {}'.format(Awake_instance))
             print('Packets {}'.format(packet_number))
@@ -431,7 +430,7 @@ while True:
         packet_status = False
 
     elif not channel_status :
-        ########### Packet transmission detected and set to receive moode ##########################
+        ########### Packet transmission detected and set to receive mode ##########################
         noise_found = True
         print('Receiving Data')
         time_now = chrono3.read()
@@ -449,7 +448,7 @@ while True:
         lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
         cca_list.clear()
         event = 0
-        while event !=1 and noise_found:
+        while event != 1 and noise_found:
             event = lora.events()
             if chrono3.read() >= fast_sleep_threshold:
                 fast_sleep_time_save += wakeup_interval - fast_sleep_threshold
