@@ -8,7 +8,11 @@ from network import WLAN
 from network import Bluetooth
 import machine
 import ustruct, ubinascii, uhashlib
+from lib.varlogger import VarLogger as vl
 import _thread
+import gc
+import sys
+import utime
 
 '''
 Implemented of LoPy4/Fipy with 1.18 pycom-micropython version
@@ -188,60 +192,91 @@ print('Neighbour Addresses:', neighbor_adresses)
 Broadcast_address = 'All'
 neighbor = 0
 
+###### for testing purposes ######
+gc_start_time = utime.ticks_ms()
+gc.collect()
+print('gc.collect duration:', utime.ticks_ms()-gc_start_time)
+###### for testing purposes ######
+
+##### for testing purposes ######
+testing_start = vl.created_timestamp
+##### for testing purposes ######
+
 print('Initialising Contiki MAC')
 packet_status = False
 ############# Contiki MAC #########################
 while True:
-    chrono.start()
-    chrono3.start()
-    channel_status = cca(chrono, cca_list)
-    packet_status = packet_check(packet_status, Awake_instance, packet_number)
-    lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
+    try:
+        ##### for testing purposes ######
+        print('Time since started:', utime.ticks_ms()- testing_start - vl.time_to_write )
+        ##### for testing purposes ######
 
-    while len(s.recv(packet_size)) > 0:
-        ss = s.recv(packet_size)
-        events = lora.events()
 
-    print('Channel Status:', channel_status)
-    print('Packet Status:', packet_status)
-    if channel_status and packet_status and not only_listen:
-        ########### Transmit Data ##########################
+
+        chrono.start()
+        chrono3.start()
+        channel_status = cca(chrono, cca_list)
+        packet_status = packet_check(packet_status, Awake_instance, packet_number)
         lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
-        print('Sending Data')
-        send_time = 0
-        data = 'Data'
-        cca_time = chrono.read()
-        cca_list.clear()
 
-        if transmission_type == 'Unicast':
-            ########### Unicast Transmission ##########################
-            send_time_updated = False
-            if ack:
-                neighbor += 1
-            if neighbor >= len(neighbor_adresses):
-                neighbor = 0
-            destination_address = neighbor_adresses[neighbor]
-            safe_time = packet_gap_interval + 0.2
-            channel_checked = True
-            ack = False
-            Phase_Lock_channel_check = False
-            phase_lock_transmissions = 0
+        while len(s.recv(packet_size)) > 0:
+            ss = s.recv(packet_size)
+            events = lora.events()
 
-            ############ Condition to use PLL implementation
-            if destination_address in phase_lock_optimization_time and float(phase_lock_optimization_time.get(destination_address)) >= pll_activation:
-                ########### PLL optimization ##########################
-                while float(phase_lock_optimization_time.get(destination_address)) - sleep_in_pll > chrono.read():
-                    lora = LoRa(power_mode=LoRa.SLEEP, region=LoRa.EU868)
-                while not ack and chrono.read() < max_wait_time:
-                    if float(phase_lock_optimization_time.get(destination_address)) - transmission_in_pll <= chrono.read() and phase_lock_transmissions < pll_threshold:
-                        ########### Transmission with PLL ##########################
-                        if channel_checked:
-                            phase_lock_time_saving = phase_lock_time_saving + chrono.read() - cca_time
-                            channel_checked = False
-                            lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
+        print('Channel Status:', channel_status)
+        print('Packet Status:', packet_status)
+        if channel_status and packet_status and not only_listen:
+            ########### Transmit Data ##########################
+            lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
+            print('Sending Data')
+            send_time = 0
+            data = 'Data'
+            cca_time = chrono.read()
+            cca_list.clear()
 
-                            if cca():
-                                ########### Channel is free and transmission with PLL starts ##########################
+            if transmission_type == 'Unicast':
+                ########### Unicast Transmission ##########################
+                send_time_updated = False
+                if ack:
+                    neighbor += 1
+                if neighbor >= len(neighbor_adresses):
+                    neighbor = 0
+                destination_address = neighbor_adresses[neighbor]
+                safe_time = packet_gap_interval + 0.2
+                channel_checked = True
+                ack = False
+                Phase_Lock_channel_check = False
+                phase_lock_transmissions = 0
+
+                ############ Condition to use PLL implementation
+                if destination_address in phase_lock_optimization_time and float(phase_lock_optimization_time.get(destination_address)) >= pll_activation:
+                    ########### PLL optimization ##########################
+                    while float(phase_lock_optimization_time.get(destination_address)) - sleep_in_pll > chrono.read():
+                        lora = LoRa(power_mode=LoRa.SLEEP, region=LoRa.EU868)
+                    while not ack and chrono.read() < max_wait_time:
+                        if float(phase_lock_optimization_time.get(destination_address)) - transmission_in_pll <= chrono.read() and phase_lock_transmissions < pll_threshold:
+                            ########### Transmission with PLL ##########################
+                            if channel_checked:
+                                phase_lock_time_saving = phase_lock_time_saving + chrono.read() - cca_time
+                                channel_checked = False
+                                lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
+
+                                if cca():
+                                    ########### Channel is free and transmission with PLL starts ##########################
+                                    packet1 = source_address + ' ' + ' ' + destination_address + ' ' + data + str(packet_number) + ' ' + str(send_time) + ' ' + str(chrono.read()) + ' '
+                                    padding = packet_size - len(packet1)
+                                    zero_padding = '0' * padding
+                                    packet = packet1 + zero_padding
+                                    s.send(packet)
+                                    transmissions += 1
+                                    phase_lock_transmissions += 1
+                                    print(packet1)
+                                else:
+                                    ########### Channel is busy ##########################
+                                    phase_lock_cca_fails += 1
+                                    Phase_Lock_channel_check = True
+                                    break
+                            else:
                                 packet1 = source_address + ' ' + ' ' + destination_address + ' ' + data + str(packet_number) + ' ' + str(send_time) + ' ' + str(chrono.read()) + ' '
                                 padding = packet_size - len(packet1)
                                 zero_padding = '0' * padding
@@ -250,172 +285,302 @@ while True:
                                 transmissions += 1
                                 phase_lock_transmissions += 1
                                 print(packet1)
-                            else:
-                                ########### Channel is busy ##########################
-                                phase_lock_cca_fails += 1
-                                Phase_Lock_channel_check = True
-                                break
-                        else:
-                            packet1 = source_address + ' ' + ' ' + destination_address + ' ' + data + str(packet_number) + ' ' + str(send_time) + ' ' + str(chrono.read()) + ' '
-                            padding = packet_size - len(packet1)
-                            zero_padding = '0' * padding
-                            packet = packet1 + zero_padding
-                            s.send(packet)
-                            transmissions += 1
-                            phase_lock_transmissions += 1
-                            print(packet1)
 
-                    elif phase_lock_transmissions >= pll_threshold:
-                        ########### If neighbour is not responding remove neighbour from PLL ##########################
-                        phase_lock_optimization.pop(destination_address)
-                        print(phase_lock_optimization)
-                        phase_lock_optimization_time.pop(destination_address)
-                        print(phase_lock_optimization_time)
-                        break
-                    else:
-                        saved_transmissions += 1
-                    if not send_time_updated and chrono.read() > wakeup_interval - safe_time:
-                        send_time_updated = True
-                        Full_send_time = send_time - 1
-                        print(Full_send_time)
-
-                    ########### Receiving the Acknowledgement ##########################
-                    time.sleep(packet_gap_interval)
-                    rcv_packet1 = str(s.recv(packet_size))
-                    rcv_packet1 = rcv_packet1[2:-1]
-                    decode_packet = rcv_packet1.split()
-                    if len(decode_packet) >= 5:
-                        if decode_packet[3] == str(packet_number) and decode_packet[1] == source_address:
-                            if send_time_updated:
-                                period = int(decode_packet[4]) // Full_send_time
-                                phase_lock_optimization[decode_packet[0]] = int(decode_packet[4]) - (Full_send_time + 3) * period
-                            else:
-                                phase_lock_optimization[decode_packet[0]] = decode_packet[4]
-                                phase_lock_optimization_time[decode_packet[0]] = decode_packet[5]
+                        elif phase_lock_transmissions >= pll_threshold:
+                            ########### If neighbour is not responding remove neighbour from PLL ##########################
+                            phase_lock_optimization.pop(destination_address)
                             print(phase_lock_optimization)
+                            phase_lock_optimization_time.pop(destination_address)
                             print(phase_lock_optimization_time)
-                            print('Ack received for packet {}'.format(packet_number))
-                            ack_data_packets.append(rcv_packet1)
-                            print(len(ack_data_packets))
-                            packet_number += 1
-                            ack = True
-                    send_time += 1
+                            break
+                        else:
+                            saved_transmissions += 1
+                        if not send_time_updated and chrono.read() > wakeup_interval - safe_time:
+                            send_time_updated = True
+                            Full_send_time = send_time - 1
+                            print(Full_send_time)
+
+                        ########### Receiving the Acknowledgement ##########################
+                        time.sleep(packet_gap_interval)
+                        rcv_packet1 = str(s.recv(packet_size))
+                        rcv_packet1 = rcv_packet1[2:-1]
+                        decode_packet = rcv_packet1.split()
+                        if len(decode_packet) >= 5:
+                            if decode_packet[3] == str(packet_number) and decode_packet[1] == source_address:
+                                if send_time_updated:
+                                    period = int(decode_packet[4]) // Full_send_time
+                                    phase_lock_optimization[decode_packet[0]] = int(decode_packet[4]) - (Full_send_time + 3) * period
+                                else:
+                                    phase_lock_optimization[decode_packet[0]] = decode_packet[4]
+                                    phase_lock_optimization_time[decode_packet[0]] = decode_packet[5]
+                                print(phase_lock_optimization)
+                                print(phase_lock_optimization_time)
+                                print('Ack received for packet {}'.format(packet_number))
+                                ack_data_packets.append(rcv_packet1)
+                                print(len(ack_data_packets))
+                                packet_number += 1
+                                ack = True
+                        send_time += 1
+
+                else:
+                    ########### Transmission without PLL ##########################
+                    while not ack and chrono.read() < max_wait_time:
+                        ########### Transmission continue until the acknowledgement ##########################
+                        packet1 = source_address + ' ' + ' ' + destination_address + ' ' + data + str(packet_number) + ' ' + str(send_time) + ' ' + str(chrono.read()) + ' '
+                        padding = packet_size - len(packet1)
+                        zero_padding = '0' * padding
+                        packet = packet1 + zero_padding
+                        s.send(packet)
+                        print(packet1)
+                        transmissions += 1
+
+                        if not send_time_updated and chrono.read() > wakeup_interval - safe_time:
+                            send_time_updated = True
+                            Full_send_time = send_time - 1
+                            print(Full_send_time)
+
+                        ########### Receiving the Acknowledgement ##########################
+                        time.sleep(packet_gap_interval)
+                        rcv_packet1 = str(s.recv(packet_size))
+                        rcv_packet1 = rcv_packet1[2:-1]
+                        decode_packet = rcv_packet1.split()
+                        if len(decode_packet) >= 5:
+                            if decode_packet[3] == str(packet_number) and decode_packet[1] == source_address:
+                                ########### Comment this to Disable PLL #####################
+                                if send_time_updated:
+                                    period = int(decode_packet[4]) // Full_send_time
+                                    phase_lock_optimization[decode_packet[0]] = int(decode_packet[4]) - (Full_send_time + 3) * period
+                                else:
+                                    phase_lock_optimization[decode_packet[0]] = decode_packet[4]
+                                    phase_lock_optimization_time[decode_packet[0]] = decode_packet[5]
+                                print(phase_lock_optimization)
+                                print(phase_lock_optimization_time)
+                                print('Ack received for packet {}'.format(packet_number))
+                                ack_data_packets.append(rcv_packet1)
+                                print(len(ack_data_packets))
+                                packet_number += 1
+                                ack = True
+                        send_time += 1
+
+                if chrono.read() >= max_wait_time:
+                    ########### Remove not responding neighbours ##########################
+                    neighbor_adresses.remove(destination_address)
+                    print(neighbor_adresses)
+
+                if len(neighbor_adresses) == 0:
+                    ########### If there are no neighbours only perform packet reception ##########################
+                    only_listen = True
+
+                if not ack and destination_address != Broadcast_address and not Phase_Lock_channel_check:
+                    ########### Identify transmission failures ##########################
+                    failed_attempts += 1
+
+                alive_time += chrono.read()
+                print('Awake_instance {}'.format(Awake_instance))
+                print('Packets {}'.format(packet_number))
+                print('Duty_Cycle {}'.format((alive_time / 3600) * 100))
+                time_left = wakeup_interval - (chrono3.read() % wakeup_interval)
+                chrono.stop()
+                chrono.reset()
+                chrono.start()
+                while chrono.read() < time_left:
+                    lora = LoRa(power_mode=LoRa.SLEEP, region=LoRa.EU868)
+                    pycom.rgbled(0x7f0000)
+                    pass
+                lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
+                chrono.stop()
+                chrono.reset()
+                print(chrono3.read())
+
+                if chrono3.read() > wakeup_interval:
+                    insatnce = chrono3.read() // wakeup_interval
+                    Awake_instance += insatnce
+                else:
+                    Awake_instance += 1
+                chrono3.stop()
+                chrono3.reset()
+                print(' ')
 
             else:
-                ########### Transmission without PLL ##########################
-                while not ack and chrono.read() < max_wait_time:
-                    ########### Transmission continue until the acknowledgement ##########################
-                    packet1 = source_address + ' ' + ' ' + destination_address + ' ' + data + str(packet_number) + ' ' + str(send_time) + ' ' + str(chrono.read()) + ' '
+                ########### Broadcast Transmission ##########################
+                print('Awake_instance {}'.format(Awake_instance))
+                print('Source_address {}'.format(source_address))
+                print('Packets {}'.format(packet_number))
+                destination_address = Broadcast_address
+                safe_time = packet_gap_interval + lora_off_time
+
+                ########### Broadcast Transmission continue during full wake up interval ##########################
+                while chrono.read() < wakeup_interval - safe_time:
+                    print('chrono:', chrono.read(), wakeup_interval - safe_time)
+                    data = 'Data'
+                    packet1 = source_address + ' ' + ' ' + destination_address + ' ' + data + str(packet_number) + ' ' + str(send_time) + ' '
                     padding = packet_size - len(packet1)
                     zero_padding = '0' * padding
                     packet = packet1 + zero_padding
+                    lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
                     s.send(packet)
                     print(packet1)
+                    chrono2.start()
+                    while chrono2.read() < packet_gap_interval:
+                        lora = LoRa(power_mode=LoRa.SLEEP, region=LoRa.EU868)
+                    chrono2.stop()
+                    chrono2.reset()
                     transmissions += 1
-
-                    if not send_time_updated and chrono.read() > wakeup_interval - safe_time:
-                        send_time_updated = True
-                        Full_send_time = send_time - 1
-                        print(Full_send_time)
-
-                    ########### Receiving the Acknowledgement ##########################
-                    time.sleep(packet_gap_interval)
-                    rcv_packet1 = str(s.recv(packet_size))
-                    rcv_packet1 = rcv_packet1[2:-1]
-                    decode_packet = rcv_packet1.split()
-                    if len(decode_packet) >= 5:
-                        if decode_packet[3] == str(packet_number) and decode_packet[1] == source_address:
-                            ########### Comment this to Disable PLL #####################
-                            if send_time_updated:
-                                period = int(decode_packet[4]) // Full_send_time
-                                phase_lock_optimization[decode_packet[0]] = int(decode_packet[4]) - (Full_send_time + 3) * period
-                            else:
-                                phase_lock_optimization[decode_packet[0]] = decode_packet[4]
-                                phase_lock_optimization_time[decode_packet[0]] = decode_packet[5]
-                            print(phase_lock_optimization)
-                            print(phase_lock_optimization_time)
-                            print('Ack received for packet {}'.format(packet_number))
-                            ack_data_packets.append(rcv_packet1)
-                            print(len(ack_data_packets))
-                            packet_number += 1
-                            ack = True
+                    broadcast_time_save += packet_gap_interval
                     send_time += 1
 
-            if chrono.read() >= max_wait_time:
-                ########### Remove not responding neighbours ##########################
-                neighbor_adresses.remove(destination_address)
-                print(neighbor_adresses)
+                packet_number += 1
+                alive_time += chrono.read()
+                Awake_instance += 1
+                time_left = wakeup_interval - chrono3.read()
+                chrono.stop()
+                chrono.reset()
+                chrono.start()
+                while chrono.read() < time_left:
+                    lora = LoRa(power_mode=LoRa.SLEEP, region=LoRa.EU868)
+                    pycom.rgbled(0x7f0000)
+                    pass
+                lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
+                pycom.rgbled(0x007f00)
+                chrono.stop()
+                chrono.reset()
+                print(chrono3.read())
+                chrono3.stop()
+                chrono3.reset()
+                print(' ')
+            packet_status = False
 
-            if len(neighbor_adresses) == 0:
-                ########### If there are no neighbours only perform packet reception ##########################
-                only_listen = True
+        elif not channel_status :
+            ########### Packet transmission detected and set to receive mode ##########################
+            noise_found = True
+            print('Receiving Data')
+            time_now = chrono3.read()
 
-            if not ack and destination_address != Broadcast_address and not Phase_Lock_channel_check:
-                ########### Identify transmission failures ##########################
-                failed_attempts += 1
+            ########## Fast sleep optimization ##########################
+            while chrono3.read() < (packet_gap_interval * 1.1 + time_now):
+                cca_list.append(str(lora.ischannel_free(-100)))
+                if cca_list.count('True') <= 10 and chrono3.read() > (packet_gap_interval + time_now):
+                    print(cca_list.count('True'))
+                    print(chrono3.read())
+                    noise_found = False
+                    print('Noise Detected')
+                    noise_detected_counter += 1
+                    break
+            lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
+            cca_list.clear()
+            event = 0
+            while event != 1 and noise_found:
+                event = lora.events()
+                if chrono3.read() >= fast_sleep_threshold:
+                    fast_sleep_time_save += wakeup_interval - fast_sleep_threshold
+                    break
 
+
+
+            ########### Packet reception ##########################
+            rcv_packet = str(s.recv(packet_size))
+            rcv_packet = rcv_packet[2:-1]
+            decode_packet = rcv_packet.split()
+            print('decoded packet', decode_packet)
+            if len(decode_packet) >= 6:
+                receiving_data = decode_packet[0] + ' ' + decode_packet[2] + ' ' + decode_packet[3]
+
+                if decode_packet[1] == source_address:
+                    ########### Unicast packet reception ##########################
+                    received_full_data.append(receiving_data)
+                    ack_packet = decode_packet[1] + ' ' + decode_packet[0] + ' Ack ' + decode_packet[3] + ' ' + decode_packet[4] + ' ' + decode_packet[5]
+                    print('sending ack')
+                    print(ack_packet)
+                    s.send(ack_packet)
+
+                elif decode_packet[1] == Broadcast_address:
+                    ########### Broadcast packet reception ##########################
+                    received_full_data.append(receiving_data)
+
+                else:
+                    print('Not For me')
+            else:
+                print('Unexpected Packet')
+                pass
+
+            ########### Information about received packets ##########################
+            print(len(received_full_data))
             alive_time += chrono.read()
             print('Awake_instance {}'.format(Awake_instance))
+            print('Source_address {}'.format(source_address))
+
+            if len(received_full_data) > 0:
+                print('Sender_address {}'.format(received_full_data[-1][0]))   ### source address of sender
+            print('Alive_time {}'.format(alive_time))
             print('Packets {}'.format(packet_number))
-            print('Duty_Cycle {}'.format((alive_time / 3600) * 100))
-            time_left = wakeup_interval - (chrono3.read() % wakeup_interval)
+            print('Duty_Cycle {}'.format((alive_time/3600)*100))
+
+            if transmission_type == 'Unicast':
+                ########### Unicast Information ##########################
+                print('Packets_Received {}'.format(len(received_full_data)))
+                print('failed_attempts {}'.format(failed_attempts))
+                print('phase_lock_time_saving {}'.format(phase_lock_time_saving))
+                print('phase_lock_cca_fails {}'.format(phase_lock_cca_fails))
+                print('Optimized_Duty_Cycle_Unicast {}'.format(((alive_time - phase_lock_time_saving) / 3600) * 100))
+                print('Transmissions {}'.format(transmissions + saved_transmissions))
+                print('Optimized_Transmissions {}'.format(transmissions))
+            else:
+                ########### Broadcast Information ##########################
+                print('Optimized_Duty_Cycle_broadcast {}'.format(((alive_time - broadcast_time_save) / 3600) * 100))
+                print('Packets_Received {}'.format(len(received_full_data)))
+                print('Transmissions {}'.format(transmissions))
+
+            print('noise_detected_counter {}'.format(noise_detected_counter))
+            print('fast_sleep_time_save {}'.format(fast_sleep_time_save))
+
+            time_left = wakeup_interval - chrono3.read()
             chrono.stop()
             chrono.reset()
             chrono.start()
+            Awake_instance += 1
             while chrono.read() < time_left:
-                lora = LoRa(power_mode=LoRa.SLEEP, region=LoRa.EU868)
                 pycom.rgbled(0x7f0000)
+                lora = LoRa(power_mode=LoRa.SLEEP, region=LoRa.EU868)
                 pass
             lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
+            pycom.rgbled(0x007f00)
             chrono.stop()
             chrono.reset()
             print(chrono3.read())
-
-            if chrono3.read() > wakeup_interval:
-                insatnce = chrono3.read() // wakeup_interval
-                Awake_instance += insatnce
-            else:
-                Awake_instance += 1
             chrono3.stop()
             chrono3.reset()
             print(' ')
 
         else:
-            ########### Broadcast Transmission ##########################
+            ########### No Packet to transmit so going back to sleep mode ##########################
+            print('Going back to Sleep')
             print('Awake_instance {}'.format(Awake_instance))
             print('Source_address {}'.format(source_address))
-            print('Packets {}'.format(packet_number))
-            destination_address = Broadcast_address
-            safe_time = packet_gap_interval + lora_off_time
-
-            ########### Broadcast Transmission continue during full wake up interval ##########################
-            while chrono.read() < wakeup_interval - safe_time:
-                print('chrono:', chrono.read(), wakeup_interval - safe_time)
-                data = 'Data'
-                packet1 = source_address + ' ' + ' ' + destination_address + ' ' + data + str(packet_number) + ' ' + str(send_time) + ' '
-                padding = packet_size - len(packet1)
-                zero_padding = '0' * padding
-                packet = packet1 + zero_padding
-                lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
-                s.send(packet)
-                print(packet1)
-                chrono2.start()
-                while chrono2.read() < packet_gap_interval:
-                    lora = LoRa(power_mode=LoRa.SLEEP, region=LoRa.EU868)
-                chrono2.stop()
-                chrono2.reset()
-                transmissions += 1
-                broadcast_time_save += packet_gap_interval
-                send_time += 1
-
-            packet_number += 1
+            cca_list.clear()
             alive_time += chrono.read()
+            print('Alive_time {}'.format(alive_time))
+            print('Packets {}'.format(packet_number))
+            print('Duty_Cycle {}'.format((alive_time / 3600) * 100))
+
+            if transmission_type == 'Unicast':
+                ########### Unicast Information ##########################
+                print('Packets_Received {}'.format(len(received_full_data)))
+                print('failed_attempts {}'.format(failed_attempts))
+                print('phase_lock_time_saving {}'.format(phase_lock_time_saving))
+                print('phase_lock_cca_fails {}'.format(phase_lock_cca_fails))
+                print('Optimized_Duty_Cycle_Unicast {}'.format(((alive_time - phase_lock_time_saving) / 3600) * 100))
+                print('Transmissions {}'.format(transmissions + saved_transmissions))
+                print('Optimized_Transmissions {}'.format(transmissions))
+            else:
+                ########### Broadcast Information ##########################
+                print('Optimized_Duty_Cycle_broadcast {}'.format(((alive_time - broadcast_time_save) / 3600) * 100))
+                print('Packets_Received {}'.format(len(received_full_data)))
+                print('Transmissions {}'.format(transmissions))
+            print('noise_detected_counter {}'.format(noise_detected_counter))
+            print('fast_sleep_time_save {}'.format(fast_sleep_time_save))
             Awake_instance += 1
-            time_left = wakeup_interval - chrono3.read()
-            chrono.stop()
-            chrono.reset()
-            chrono.start()
-            while chrono.read() < time_left:
+
+            while chrono3.read() < wakeup_interval:
                 lora = LoRa(power_mode=LoRa.SLEEP, region=LoRa.EU868)
                 pycom.rgbled(0x7f0000)
                 pass
@@ -427,147 +592,24 @@ while True:
             chrono3.stop()
             chrono3.reset()
             print(' ')
-        packet_status = False
+        
+        ##### for testing purposes
+        if (utime.ticks_ms() - testing_start - vl.time_to_write)/1000 >= 600: # 10 minutes
+            vl.save()
+            chrono.deinit()
+            chrono1.deinit()
+            chrono2.deinit()
+            chrono3.deinit()
+            print('Timer deinitiated')
+            sys.exit()
 
-    elif not channel_status :
-        ########### Packet transmission detected and set to receive mode ##########################
-        noise_found = True
-        print('Receiving Data')
-        time_now = chrono3.read()
-
-        ########## Fast sleep optimization ##########################
-        while chrono3.read() < (packet_gap_interval * 1.1 + time_now):
-            cca_list.append(str(lora.ischannel_free(-100)))
-            if cca_list.count('True') <= 10 and chrono3.read() > (packet_gap_interval + time_now):
-                print(cca_list.count('True'))
-                print(chrono3.read())
-                noise_found = False
-                print('Noise Detected')
-                noise_detected_counter += 1
-                break
-        lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
-        cca_list.clear()
-        event = 0
-        while event != 1 and noise_found:
-            event = lora.events()
-            if chrono3.read() >= fast_sleep_threshold:
-                fast_sleep_time_save += wakeup_interval - fast_sleep_threshold
-                break
-
-
-
-        ########### Packet reception ##########################
-        rcv_packet = str(s.recv(packet_size))
-        rcv_packet = rcv_packet[2:-1]
-        decode_packet = rcv_packet.split()
-        print('decoded packet', decode_packet)
-        if len(decode_packet) >= 6:
-            receiving_data = decode_packet[0] + ' ' + decode_packet[2] + ' ' + decode_packet[3]
-
-            if decode_packet[1] == source_address:
-                ########### Unicast packet reception ##########################
-                received_full_data.append(receiving_data)
-                ack_packet = decode_packet[1] + ' ' + decode_packet[0] + ' Ack ' + decode_packet[3] + ' ' + decode_packet[4] + ' ' + decode_packet[5]
-                print('sending ack')
-                print(ack_packet)
-                s.send(ack_packet)
-
-            elif decode_packet[1] == Broadcast_address:
-                ########### Broadcast packet reception ##########################
-                received_full_data.append(receiving_data)
-
-            else:
-                print('Not For me')
-        else:
-            print('Unexpected Packet')
-            pass
-
-        ########### Information about received packets ##########################
-        print(len(received_full_data))
-        alive_time += chrono.read()
-        print('Awake_instance {}'.format(Awake_instance))
-        print('Source_address {}'.format(source_address))
-
-        if len(received_full_data) > 0:
-            print('Sender_address {}'.format(received_full_data[-1][0]))   ### source address of sender
-        print('Alive_time {}'.format(alive_time))
-        print('Packets {}'.format(packet_number))
-        print('Duty_Cycle {}'.format((alive_time/3600)*100))
-
-        if transmission_type == 'Unicast':
-            ########### Unicast Information ##########################
-            print('Packets_Received {}'.format(len(received_full_data)))
-            print('failed_attempts {}'.format(failed_attempts))
-            print('phase_lock_time_saving {}'.format(phase_lock_time_saving))
-            print('phase_lock_cca_fails {}'.format(phase_lock_cca_fails))
-            print('Optimized_Duty_Cycle_Unicast {}'.format(((alive_time - phase_lock_time_saving) / 3600) * 100))
-            print('Transmissions {}'.format(transmissions + saved_transmissions))
-            print('Optimized_Transmissions {}'.format(transmissions))
-        else:
-            ########### Broadcast Information ##########################
-            print('Optimized_Duty_Cycle_broadcast {}'.format(((alive_time - broadcast_time_save) / 3600) * 100))
-            print('Packets_Received {}'.format(len(received_full_data)))
-            print('Transmissions {}'.format(transmissions))
-
-        print('noise_detected_counter {}'.format(noise_detected_counter))
-        print('fast_sleep_time_save {}'.format(fast_sleep_time_save))
-
-        time_left = wakeup_interval - chrono3.read()
-        chrono.stop()
-        chrono.reset()
-        chrono.start()
-        Awake_instance += 1
-        while chrono.read() < time_left:
-            pycom.rgbled(0x7f0000)
-            lora = LoRa(power_mode=LoRa.SLEEP, region=LoRa.EU868)
-            pass
-        lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
-        pycom.rgbled(0x007f00)
-        chrono.stop()
-        chrono.reset()
-        print(chrono3.read())
-        chrono3.stop()
-        chrono3.reset()
-        print(' ')
-
-    else:
-        ########### No Packet to transmit so going back to sleep mode ##########################
-        print('Going back to Sleep')
-        print('Awake_instance {}'.format(Awake_instance))
-        print('Source_address {}'.format(source_address))
-        cca_list.clear()
-        alive_time += chrono.read()
-        print('Alive_time {}'.format(alive_time))
-        print('Packets {}'.format(packet_number))
-        print('Duty_Cycle {}'.format((alive_time / 3600) * 100))
-
-        if transmission_type == 'Unicast':
-            ########### Unicast Information ##########################
-            print('Packets_Received {}'.format(len(received_full_data)))
-            print('failed_attempts {}'.format(failed_attempts))
-            print('phase_lock_time_saving {}'.format(phase_lock_time_saving))
-            print('phase_lock_cca_fails {}'.format(phase_lock_cca_fails))
-            print('Optimized_Duty_Cycle_Unicast {}'.format(((alive_time - phase_lock_time_saving) / 3600) * 100))
-            print('Transmissions {}'.format(transmissions + saved_transmissions))
-            print('Optimized_Transmissions {}'.format(transmissions))
-        else:
-            ########### Broadcast Information ##########################
-            print('Optimized_Duty_Cycle_broadcast {}'.format(((alive_time - broadcast_time_save) / 3600) * 100))
-            print('Packets_Received {}'.format(len(received_full_data)))
-            print('Transmissions {}'.format(transmissions))
-        print('noise_detected_counter {}'.format(noise_detected_counter))
-        print('fast_sleep_time_save {}'.format(fast_sleep_time_save))
-        Awake_instance += 1
-
-        while chrono3.read() < wakeup_interval:
-            lora = LoRa(power_mode=LoRa.SLEEP, region=LoRa.EU868)
-            pycom.rgbled(0x7f0000)
-            pass
-        lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
-        pycom.rgbled(0x007f00)
-        chrono.stop()
-        chrono.reset()
-        print(chrono3.read())
-        chrono3.stop()
-        chrono3.reset()
-        print(' ')
+    except Exception as e:
+        chrono.deinit()
+        chrono1.deinit()
+        chrono2.deinit()
+        chrono3.deinit()
+        print('Timer deinitiated')
+        # write_to_log('main: {}'.format(e), str(current_time))
+        print('Shutting down due to following error in main loop:')
+        print(sys.print_exception(e))
+        sys.exit()

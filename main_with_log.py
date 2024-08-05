@@ -64,7 +64,6 @@ bluetooth.deinit()
 
 
 ######### Own node's information #####################
-######### Own node's information #####################
 if get_node_id() == 235968217:
     my_number = 1
     vl.log(var='my_number', fun=_fun_name, clas=_cls_name, th=_thread_id)
@@ -293,93 +292,131 @@ vl.log(var='Broadcast_address', fun=_fun_name, clas=_cls_name, th=_thread_id)
 neighbor = 0
 vl.log(var='neighbor', fun=_fun_name, clas=_cls_name, th=_thread_id)
 
+###### for testing purposes ######
+gc_start_time = utime.ticks_ms()
+gc.collect()
+print('gc.collect duration:', utime.ticks_ms()-gc_start_time)
+###### for testing purposes ######
+
+##### for testing purposes ######
+testing_start = vl.created_timestamp
+##### for testing purposes ######
+
 print('Initialising Contiki MAC')
 packet_status = False
 vl.log(var='packet_status', fun=_fun_name, clas=_cls_name, th=_thread_id)
 
 ############# Contiki MAC #########################
 while True:
-    chrono.start()
-    chrono3.start()
-    channel_status = cca(chrono, cca_list)
-    vl.log(var='channel_status', fun=_fun_name, clas=_cls_name, th=_thread_id)
-    packet_status = packet_check(packet_status, Awake_instance, packet_number)
-    vl.log(var='packet_status', fun=_fun_name, clas=_cls_name, th=_thread_id)
-    lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
-    vl.log(var='lora', fun=_fun_name, clas=_cls_name, th=_thread_id)
+    try:
 
-    while len(s.recv(packet_size)) > 0:
-        ss = s.recv(packet_size)
-        vl.log(var='ss', fun=_fun_name, clas=_cls_name, th=_thread_id)
-        events = lora.events()
-        vl.log(var='events', fun=_fun_name, clas=_cls_name, th=_thread_id)
+        ##### for testing purposes ######
+        print('Time since started:', utime.ticks_ms()- testing_start - vl.time_to_write )
+        ##### for testing purposes ######
 
-    print('Channel Status:', channel_status)
-    print('Packet Status:', packet_status)
-    if channel_status and packet_status and not only_listen:
-        ########### Transmit Data ##########################
+        chrono.start()
+        chrono3.start()
+        channel_status = cca(chrono, cca_list)
+        vl.log(var='channel_status', fun=_fun_name, clas=_cls_name, th=_thread_id)
+        packet_status = packet_check(packet_status, Awake_instance, packet_number)
+        vl.log(var='packet_status', fun=_fun_name, clas=_cls_name, th=_thread_id)
         lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
         vl.log(var='lora', fun=_fun_name, clas=_cls_name, th=_thread_id)
-        print('Sending Data')
-        send_time = 0
-        vl.log(var='send_time', fun=_fun_name, clas=_cls_name, th=_thread_id)
-        data = 'Data'
-        vl.log(var='data', fun=_fun_name, clas=_cls_name, th=_thread_id)
-        cca_time = chrono.read()
-        vl.log(var='cca_time', fun=_fun_name, clas=_cls_name, th=_thread_id)
-        cca_list.clear()
-        vl.log(var='cca_list', fun=_fun_name, clas=_cls_name, th=_thread_id)
+
+        while len(s.recv(packet_size)) > 0:
+            ss = s.recv(packet_size)
+            vl.log(var='ss', fun=_fun_name, clas=_cls_name, th=_thread_id)
+            events = lora.events()
+            vl.log(var='events', fun=_fun_name, clas=_cls_name, th=_thread_id)
+
+        print('Channel Status:', channel_status)
+        print('Packet Status:', packet_status)
+        if channel_status and packet_status and not only_listen:
+            ########### Transmit Data ##########################
+            lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
+            vl.log(var='lora', fun=_fun_name, clas=_cls_name, th=_thread_id)
+            print('Sending Data')
+            send_time = 0
+            vl.log(var='send_time', fun=_fun_name, clas=_cls_name, th=_thread_id)
+            data = 'Data'
+            vl.log(var='data', fun=_fun_name, clas=_cls_name, th=_thread_id)
+            cca_time = chrono.read()
+            vl.log(var='cca_time', fun=_fun_name, clas=_cls_name, th=_thread_id)
+            cca_list.clear()
+            vl.log(var='cca_list', fun=_fun_name, clas=_cls_name, th=_thread_id)
 
 
-        if transmission_type == 'Unicast':
-            ########### Unicast Transmission ##########################
-            send_time_updated = False
-            vl.log(var='send_time_updated', fun=_fun_name, clas=_cls_name, th=_thread_id)
-            if ack:
-                neighbor += 1
-                vl.log(var='neighbor', fun=_fun_name, clas=_cls_name, th=_thread_id)
-            if neighbor >= len(neighbor_adresses):
-                neighbor = 0
-                vl.log(var='neighbor', fun=_fun_name, clas=_cls_name, th=_thread_id)
+            if transmission_type == 'Unicast':
+                ########### Unicast Transmission ##########################
+                send_time_updated = False
+                vl.log(var='send_time_updated', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                if ack:
+                    neighbor += 1
+                    vl.log(var='neighbor', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                if neighbor >= len(neighbor_adresses):
+                    neighbor = 0
+                    vl.log(var='neighbor', fun=_fun_name, clas=_cls_name, th=_thread_id)
 
-            destination_address = neighbor_adresses[neighbor]
-            vl.log(var='destination_address', fun=_fun_name, clas=_cls_name, th=_thread_id)
-            safe_time = packet_gap_interval + 0.2
-            vl.log(var='safe_time', fun=_fun_name, clas=_cls_name, th=_thread_id)
-            channel_checked = True
-            vl.log(var='channel_checked', fun=_fun_name, clas=_cls_name, th=_thread_id)
-            ack = False
-            vl.log(var='ack', fun=_fun_name, clas=_cls_name, th=_thread_id)
-            Phase_Lock_channel_check = False
-            vl.log(var='Phase_Lock_channel_check', fun=_fun_name, clas=_cls_name, th=_thread_id)
-            phase_lock_transmissions = 0
-            vl.log(var='phase_lock_transmissions', fun=_fun_name, clas=_cls_name, th=_thread_id)
-
-
-            ############ Condition to use PLL implementation
-            if destination_address in phase_lock_optimization_time and float(phase_lock_optimization_time.get(destination_address)) >= pll_activation:
-                ########### PLL optimization ##########################
-                while float(phase_lock_optimization_time.get(destination_address)) - sleep_in_pll > chrono.read():
-                    lora = LoRa(power_mode=LoRa.SLEEP, region=LoRa.EU868)
-                    vl.log(var='lora', fun=_fun_name, clas=_cls_name, th=_thread.get_ident())
-                while not ack and chrono.read() < max_wait_time:
-                    if float(phase_lock_optimization_time.get(destination_address)) - transmission_in_pll <= chrono.read() and phase_lock_transmissions < pll_threshold:
-                        ########### Transmission with PLL ##########################
-                        if channel_checked:
-                            phase_lock_time_saving = phase_lock_time_saving + chrono.read() - cca_time
-                            vl.log(var='phase_lock_time_saving', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                            channel_checked = False
-                            vl.log(var='channel_checked', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                            lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
-                            vl.log(var='lora', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                destination_address = neighbor_adresses[neighbor]
+                vl.log(var='destination_address', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                safe_time = packet_gap_interval + 0.2
+                vl.log(var='safe_time', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                channel_checked = True
+                vl.log(var='channel_checked', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                ack = False
+                vl.log(var='ack', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                Phase_Lock_channel_check = False
+                vl.log(var='Phase_Lock_channel_check', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                phase_lock_transmissions = 0
+                vl.log(var='phase_lock_transmissions', fun=_fun_name, clas=_cls_name, th=_thread_id)
 
 
-                            if cca():
-                                ########### Channel is free and transmission with PLL starts ##########################
+                ############ Condition to use PLL implementation
+                if destination_address in phase_lock_optimization_time and float(phase_lock_optimization_time.get(destination_address)) >= pll_activation:
+                    ########### PLL optimization ##########################
+                    while float(phase_lock_optimization_time.get(destination_address)) - sleep_in_pll > chrono.read():
+                        lora = LoRa(power_mode=LoRa.SLEEP, region=LoRa.EU868)
+                        vl.log(var='lora', fun=_fun_name, clas=_cls_name, th=_thread.get_ident())
+                    while not ack and chrono.read() < max_wait_time:
+                        if float(phase_lock_optimization_time.get(destination_address)) - transmission_in_pll <= chrono.read() and phase_lock_transmissions < pll_threshold:
+                            ########### Transmission with PLL ##########################
+                            if channel_checked:
+                                phase_lock_time_saving = phase_lock_time_saving + chrono.read() - cca_time
+                                vl.log(var='phase_lock_time_saving', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                                channel_checked = False
+                                vl.log(var='channel_checked', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                                lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
+                                vl.log(var='lora', fun=_fun_name, clas=_cls_name, th=_thread_id)
+
+
+                                if cca():
+                                    ########### Channel is free and transmission with PLL starts ##########################
+                                    packet1 = source_address + ' ' + ' ' + destination_address + ' ' + data + str(packet_number) + ' ' + str(send_time) + ' ' + str(chrono.read()) + ' '
+                                    vl.log(var='packet1', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                                    padding = packet_size - len(packet1)
+                                    vl.log(var='padding', fun=_fun_name, clas=_cls_name, th=_thread_id) 
+                                    zero_padding = '0' * padding
+                                    vl.log(var='zero_padding', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                                    packet = packet1 + zero_padding
+                                    vl.log(var='packet', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                                    s.send(packet)
+                                    transmissions += 1
+                                    vl.log(var='transmissions', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                                    phase_lock_transmissions += 1
+                                    vl.log(var='phase_lock_transmissions', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                                    print(packet1)
+                                else:
+                                    ########### Channel is busy ##########################
+                                    phase_lock_cca_fails += 1
+                                    vl.log(var='phase_lock_cca_fails', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                                    Phase_Lock_channel_check = True
+                                    vl.log(var='Phase_Lock_channel_check', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                                    break
+                            else:
                                 packet1 = source_address + ' ' + ' ' + destination_address + ' ' + data + str(packet_number) + ' ' + str(send_time) + ' ' + str(chrono.read()) + ' '
                                 vl.log(var='packet1', fun=_fun_name, clas=_cls_name, th=_thread_id)
                                 padding = packet_size - len(packet1)
-                                vl.log(var='padding', fun=_fun_name, clas=_cls_name, th=_thread_id) 
+                                vl.log(var='padding', fun=_fun_name, clas=_cls_name, th=_thread_id)
                                 zero_padding = '0' * padding
                                 vl.log(var='zero_padding', fun=_fun_name, clas=_cls_name, th=_thread_id)
                                 packet = packet1 + zero_padding
@@ -390,87 +427,184 @@ while True:
                                 phase_lock_transmissions += 1
                                 vl.log(var='phase_lock_transmissions', fun=_fun_name, clas=_cls_name, th=_thread_id)
                                 print(packet1)
-                            else:
-                                ########### Channel is busy ##########################
-                                phase_lock_cca_fails += 1
-                                vl.log(var='phase_lock_cca_fails', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                                Phase_Lock_channel_check = True
-                                vl.log(var='Phase_Lock_channel_check', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                                break
-                        else:
-                            packet1 = source_address + ' ' + ' ' + destination_address + ' ' + data + str(packet_number) + ' ' + str(send_time) + ' ' + str(chrono.read()) + ' '
-                            vl.log(var='packet1', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                            padding = packet_size - len(packet1)
-                            vl.log(var='padding', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                            zero_padding = '0' * padding
-                            vl.log(var='zero_padding', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                            packet = packet1 + zero_padding
-                            vl.log(var='packet', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                            s.send(packet)
-                            transmissions += 1
-                            vl.log(var='transmissions', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                            phase_lock_transmissions += 1
-                            vl.log(var='phase_lock_transmissions', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                            print(packet1)
 
-                    elif phase_lock_transmissions >= pll_threshold:
-                        ########### If neighbour is not responding remove neighbour from PLL ##########################
-                        phase_lock_optimization.pop(destination_address)
-                        vl.log(var='phase_lock_optimization', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                        print(phase_lock_optimization)
-                        phase_lock_optimization_time.pop(destination_address)
-                        vl.log(var='phase_lock_optimization_time', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                        print(phase_lock_optimization_time)
-                        break
-                    else:
-                        saved_transmissions += 1
-                        vl.log(var='saved_transmissions', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                        
-                    if not send_time_updated and chrono.read() > wakeup_interval - safe_time:
-                        send_time_updated = True
-                        vl.log(var='send_time_updated', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                        Full_send_time = send_time - 1
-                        vl.log(var='Full_send_time', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                        print(Full_send_time)
-
-                    ########### Receiving the Acknowledgement ##########################
-                    time.sleep(packet_gap_interval)
-                    rcv_packet1 = str(s.recv(packet_size))
-                    vl.log(var='rcv_packet1', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                    rcv_packet1 = rcv_packet1[2:-1]
-                    vl.log(var='rcv_packet1', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                    decode_packet = rcv_packet1.split()
-                    vl.log(var='decode_packet', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                    if len(decode_packet) >= 5:
-                        if decode_packet[3] == str(packet_number) and decode_packet[1] == source_address:
-                            if send_time_updated:
-                                period = int(decode_packet[4]) // Full_send_time
-                                vl.log(var='period', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                                phase_lock_optimization[decode_packet[0]] = int(decode_packet[4]) - (Full_send_time + 3) * period
-                                vl.log(var='phase_lock_optimization', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                            else:
-                                phase_lock_optimization[decode_packet[0]] = decode_packet[4]
-                                vl.log(var='phase_lock_optimization', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                                phase_lock_optimization_time[decode_packet[0]] = decode_packet[5]
-                                vl.log(var='phase_lock_optimization_time', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                        elif phase_lock_transmissions >= pll_threshold:
+                            ########### If neighbour is not responding remove neighbour from PLL ##########################
+                            phase_lock_optimization.pop(destination_address)
+                            vl.log(var='phase_lock_optimization', fun=_fun_name, clas=_cls_name, th=_thread_id)
                             print(phase_lock_optimization)
+                            phase_lock_optimization_time.pop(destination_address)
+                            vl.log(var='phase_lock_optimization_time', fun=_fun_name, clas=_cls_name, th=_thread_id)
                             print(phase_lock_optimization_time)
-                            print('Ack received for packet {}'.format(packet_number))
-                            ack_data_packets.append(rcv_packet1)
-                            vl.log(var='ack_data_packets', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                            print(len(ack_data_packets))
-                            packet_number += 1
-                            vl.log(var='packet_number', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                            ack = True
-                            vl.log(var='ack', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                    send_time += 1
-                    vl.log(var='send_time', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                            break
+                        else:
+                            saved_transmissions += 1
+                            vl.log(var='saved_transmissions', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                            
+                        if not send_time_updated and chrono.read() > wakeup_interval - safe_time:
+                            send_time_updated = True
+                            vl.log(var='send_time_updated', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                            Full_send_time = send_time - 1
+                            vl.log(var='Full_send_time', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                            print(Full_send_time)
+
+                        ########### Receiving the Acknowledgement ##########################
+                        time.sleep(packet_gap_interval)
+                        rcv_packet1 = str(s.recv(packet_size))
+                        vl.log(var='rcv_packet1', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                        rcv_packet1 = rcv_packet1[2:-1]
+                        vl.log(var='rcv_packet1', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                        decode_packet = rcv_packet1.split()
+                        vl.log(var='decode_packet', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                        if len(decode_packet) >= 5:
+                            if decode_packet[3] == str(packet_number) and decode_packet[1] == source_address:
+                                if send_time_updated:
+                                    period = int(decode_packet[4]) // Full_send_time
+                                    vl.log(var='period', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                                    phase_lock_optimization[decode_packet[0]] = int(decode_packet[4]) - (Full_send_time + 3) * period
+                                    vl.log(var='phase_lock_optimization', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                                else:
+                                    phase_lock_optimization[decode_packet[0]] = decode_packet[4]
+                                    vl.log(var='phase_lock_optimization', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                                    phase_lock_optimization_time[decode_packet[0]] = decode_packet[5]
+                                    vl.log(var='phase_lock_optimization_time', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                                print(phase_lock_optimization)
+                                print(phase_lock_optimization_time)
+                                print('Ack received for packet {}'.format(packet_number))
+                                ack_data_packets.append(rcv_packet1)
+                                vl.log(var='ack_data_packets', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                                print(len(ack_data_packets))
+                                packet_number += 1
+                                vl.log(var='packet_number', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                                ack = True
+                                vl.log(var='ack', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                        send_time += 1
+                        vl.log(var='send_time', fun=_fun_name, clas=_cls_name, th=_thread_id)
+
+                else:
+                    ########### Transmission without PLL ##########################
+                    while not ack and chrono.read() < max_wait_time:
+                        ########### Transmission continue until the acknowledgement ##########################
+                        packet1 = source_address + ' ' + ' ' + destination_address + ' ' + data + str(packet_number) + ' ' + str(send_time) + ' ' + str(chrono.read()) + ' '
+                        vl.log(var='packet1', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                        padding = packet_size - len(packet1)
+                        vl.log(var='padding', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                        zero_padding = '0' * padding
+                        vl.log(var='zero_padding', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                        packet = packet1 + zero_padding
+                        vl.log(var='packet', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                        s.send(packet)
+                        print(packet1)
+                        transmissions += 1
+                        vl.log(var='transmissions', fun=_fun_name, clas=_cls_name, th=_thread_id)
+
+                        if not send_time_updated and chrono.read() > wakeup_interval - safe_time:
+                            send_time_updated = True
+                            vl.log(var='send_time_updated', fun=_fun_name, clas=_cls_name, th=_thread_id)                 
+                            Full_send_time = send_time - 1
+                            vl.log(var='Full_send_time', fun=_fun_name, clas=_cls_name, th=_thread_id)           
+                            print(Full_send_time)
+
+                        ########### Receiving the Acknowledgement ##########################
+                        time.sleep(packet_gap_interval)
+                        rcv_packet1 = str(s.recv(packet_size))
+                        vl.log(var='rcv_packet1', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                        rcv_packet1 = rcv_packet1[2:-1]
+                        vl.log(var='rcv_packet1', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                        decode_packet = rcv_packet1.split()
+                        vl.log(var='decode_packet', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                        if len(decode_packet) >= 5:
+                            if decode_packet[3] == str(packet_number) and decode_packet[1] == source_address:
+                                ########### Comment this to Disable PLL #####################
+                                if send_time_updated:
+                                    period = int(decode_packet[4]) // Full_send_time
+                                    vl.log(var='period', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                                    phase_lock_optimization[decode_packet[0]] = int(decode_packet[4]) - (Full_send_time + 3) * period
+                                    vl.log(var='phase_lock_optimization', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                                else:
+                                    phase_lock_optimization[decode_packet[0]] = decode_packet[4]
+                                    vl.log(var='phase_lock_optimization', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                                    phase_lock_optimization_time[decode_packet[0]] = decode_packet[5]
+                                    vl.log(var='phase_lock_optimization_time', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                                print(phase_lock_optimization)
+                                print(phase_lock_optimization_time)
+                                print('Ack received for packet {}'.format(packet_number))
+
+                                ack_data_packets.append(rcv_packet1)
+                                vl.log(var='ack_data_packets', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                                print(len(ack_data_packets))
+                                packet_number += 1
+                                vl.log(var='packet_number', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                                ack = True
+                                vl.log(var='ack', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                        send_time += 1
+                        vl.log(var='send_time', fun=_fun_name, clas=_cls_name, th=_thread_id)
+
+                if chrono.read() >= max_wait_time:
+                    ########### Remove not responding neighbours ##########################
+                    neighbor_adresses.remove(destination_address)
+                    vl.log(var='neighbor_adresses', fun=_fun_name, clas=_cls_name, th=_thread.get_ident())
+                    print(neighbor_adresses)
+
+                if len(neighbor_adresses) == 0:
+                    ########### If there are no neighbours only perform packet reception ##########################
+                    only_listen = True
+                    vl.log(var='only_listen', fun=_fun_name, clas=_cls_name, th=_thread.get_ident())
+
+                if not ack and destination_address != Broadcast_address and not Phase_Lock_channel_check:
+                    ########### Identify transmission failures ##########################
+                    failed_attempts += 1
+                    vl.log(var='failed_attempts', fun=_fun_name, clas=_cls_name, th=_thread.get_ident())              
+
+                alive_time += chrono.read()
+                vl.log(var='alive_time', fun=_fun_name, clas=_cls_name, th=_thread.get_ident())
+                print('Awake_instance {}'.format(Awake_instance))
+                print('Packets {}'.format(packet_number))
+                print('Duty_Cycle {}'.format((alive_time / 3600) * 100))
+                time_left = wakeup_interval - (chrono3.read() % wakeup_interval)
+                vl.log(var='time_left', fun=_fun_name, clas=_cls_name, th=_thread.get_ident())
+                chrono.stop()
+                chrono.reset()
+                chrono.start()
+                while chrono.read() < time_left:
+                    lora = LoRa(power_mode=LoRa.SLEEP, region=LoRa.EU868)
+                    vl.log(var='lora', fun=_fun_name, clas=_cls_name, th=_thread.get_ident())
+                    pycom.rgbled(0x7f0000)
+                    pass
+                lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
+                vl.log(var='lora', fun=_fun_name, clas=_cls_name, th=_thread.get_ident())
+                chrono.stop()
+                chrono.reset()
+                print(chrono3.read())
+
+                if chrono3.read() > wakeup_interval:
+                    insatnce = chrono3.read() // wakeup_interval
+                    vl.log(var='insatnce', fun=_fun_name, clas=_cls_name, th=_thread.get_ident())
+                    Awake_instance += insatnce
+                    vl.log(var='Awake_instance', fun=_fun_name, clas=_cls_name, th=_thread.get_ident())
+                else:
+                    Awake_instance += 1
+                    vl.log(var='Awake_instance', fun=_fun_name, clas=_cls_name, th=_thread.get_ident())
+                chrono3.stop()
+                chrono3.reset()
+                print(' ')
 
             else:
-                ########### Transmission without PLL ##########################
-                while not ack and chrono.read() < max_wait_time:
-                    ########### Transmission continue until the acknowledgement ##########################
-                    packet1 = source_address + ' ' + ' ' + destination_address + ' ' + data + str(packet_number) + ' ' + str(send_time) + ' ' + str(chrono.read()) + ' '
+                ########### Broadcast Transmission ##########################
+                print('Awake_instance {}'.format(Awake_instance))
+                print('Source_address {}'.format(source_address))
+                print('Packets {}'.format(packet_number))
+                destination_address = Broadcast_address
+                vl.log(var='destination_address', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                safe_time = packet_gap_interval + lora_off_time
+                vl.log(var='safe_time', fun=_fun_name, clas=_cls_name, th=_thread_id)
+
+                ########### Broadcast Transmission continue during full wake up interval ##########################
+                while chrono.read() < wakeup_interval - safe_time:
+                    print('chrono:', chrono.read(), wakeup_interval - safe_time)
+                    data = 'Data'
+                    vl.log(var='data', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                    packet1 = source_address + ' ' + ' ' + destination_address + ' ' + data + str(packet_number) + ' ' + str(send_time) + ' '
                     vl.log(var='packet1', fun=_fun_name, clas=_cls_name, th=_thread_id)
                     padding = packet_size - len(packet1)
                     vl.log(var='padding', fun=_fun_name, clas=_cls_name, th=_thread_id)
@@ -478,154 +612,207 @@ while True:
                     vl.log(var='zero_padding', fun=_fun_name, clas=_cls_name, th=_thread_id)
                     packet = packet1 + zero_padding
                     vl.log(var='packet', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                    lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
+                    vl.log(var='lora', fun=_fun_name, clas=_cls_name, th=_thread_id)
                     s.send(packet)
                     print(packet1)
+                    chrono2.start()
+                    while chrono2.read() < packet_gap_interval:
+                        lora = LoRa(power_mode=LoRa.SLEEP, region=LoRa.EU868)
+                        vl.log(var='lora', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                    chrono2.stop()
+                    chrono2.reset()
                     transmissions += 1
                     vl.log(var='transmissions', fun=_fun_name, clas=_cls_name, th=_thread_id)
-
-                    if not send_time_updated and chrono.read() > wakeup_interval - safe_time:
-                        send_time_updated = True
-                        vl.log(var='send_time_updated', fun=_fun_name, clas=_cls_name, th=_thread_id)                 
-                        Full_send_time = send_time - 1
-                        vl.log(var='Full_send_time', fun=_fun_name, clas=_cls_name, th=_thread_id)           
-                        print(Full_send_time)
-
-                    ########### Receiving the Acknowledgement ##########################
-                    time.sleep(packet_gap_interval)
-                    rcv_packet1 = str(s.recv(packet_size))
-                    vl.log(var='rcv_packet1', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                    rcv_packet1 = rcv_packet1[2:-1]
-                    vl.log(var='rcv_packet1', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                    decode_packet = rcv_packet1.split()
-                    vl.log(var='decode_packet', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                    if len(decode_packet) >= 5:
-                        if decode_packet[3] == str(packet_number) and decode_packet[1] == source_address:
-                            ########### Comment this to Disable PLL #####################
-                            if send_time_updated:
-                                period = int(decode_packet[4]) // Full_send_time
-                                vl.log(var='period', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                                phase_lock_optimization[decode_packet[0]] = int(decode_packet[4]) - (Full_send_time + 3) * period
-                                vl.log(var='phase_lock_optimization', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                            else:
-                                phase_lock_optimization[decode_packet[0]] = decode_packet[4]
-                                vl.log(var='phase_lock_optimization', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                                phase_lock_optimization_time[decode_packet[0]] = decode_packet[5]
-                                vl.log(var='phase_lock_optimization_time', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                            print(phase_lock_optimization)
-                            print(phase_lock_optimization_time)
-                            print('Ack received for packet {}'.format(packet_number))
-
-                            ack_data_packets.append(rcv_packet1)
-                            vl.log(var='ack_data_packets', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                            print(len(ack_data_packets))
-                            packet_number += 1
-                            vl.log(var='packet_number', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                            ack = True
-                            vl.log(var='ack', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                    broadcast_time_save += packet_gap_interval
+                    vl.log(var='broadcast_time_save', fun=_fun_name, clas=_cls_name, th=_thread_id)
                     send_time += 1
                     vl.log(var='send_time', fun=_fun_name, clas=_cls_name, th=_thread_id)
 
-            if chrono.read() >= max_wait_time:
-                ########### Remove not responding neighbours ##########################
-                neighbor_adresses.remove(destination_address)
-                vl.log(var='neighbor_adresses', fun=_fun_name, clas=_cls_name, th=_thread.get_ident())
-                print(neighbor_adresses)
-
-            if len(neighbor_adresses) == 0:
-                ########### If there are no neighbours only perform packet reception ##########################
-                only_listen = True
-                vl.log(var='only_listen', fun=_fun_name, clas=_cls_name, th=_thread.get_ident())
-
-            if not ack and destination_address != Broadcast_address and not Phase_Lock_channel_check:
-                ########### Identify transmission failures ##########################
-                failed_attempts += 1
-                vl.log(var='failed_attempts', fun=_fun_name, clas=_cls_name, th=_thread.get_ident())              
-
-            alive_time += chrono.read()
-            vl.log(var='alive_time', fun=_fun_name, clas=_cls_name, th=_thread.get_ident())
-            print('Awake_instance {}'.format(Awake_instance))
-            print('Packets {}'.format(packet_number))
-            print('Duty_Cycle {}'.format((alive_time / 3600) * 100))
-            time_left = wakeup_interval - (chrono3.read() % wakeup_interval)
-            vl.log(var='time_left', fun=_fun_name, clas=_cls_name, th=_thread.get_ident())
-            chrono.stop()
-            chrono.reset()
-            chrono.start()
-            while chrono.read() < time_left:
-                lora = LoRa(power_mode=LoRa.SLEEP, region=LoRa.EU868)
-                vl.log(var='lora', fun=_fun_name, clas=_cls_name, th=_thread.get_ident())
-                pycom.rgbled(0x7f0000)
-                pass
-            lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
-            vl.log(var='lora', fun=_fun_name, clas=_cls_name, th=_thread.get_ident())
-            chrono.stop()
-            chrono.reset()
-            print(chrono3.read())
-
-            if chrono3.read() > wakeup_interval:
-                insatnce = chrono3.read() // wakeup_interval
-                vl.log(var='insatnce', fun=_fun_name, clas=_cls_name, th=_thread.get_ident())
-                Awake_instance += insatnce
-                vl.log(var='Awake_instance', fun=_fun_name, clas=_cls_name, th=_thread.get_ident())
-            else:
+                packet_number += 1
+                vl.log(var='packet_number', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                alive_time += chrono.read()
+                vl.log(var='alive_time', fun=_fun_name, clas=_cls_name, th=_thread_id)
                 Awake_instance += 1
-                vl.log(var='Awake_instance', fun=_fun_name, clas=_cls_name, th=_thread.get_ident())
-            chrono3.stop()
-            chrono3.reset()
-            print(' ')
-
-        else:
-            ########### Broadcast Transmission ##########################
-            print('Awake_instance {}'.format(Awake_instance))
-            print('Source_address {}'.format(source_address))
-            print('Packets {}'.format(packet_number))
-            destination_address = Broadcast_address
-            vl.log(var='destination_address', fun=_fun_name, clas=_cls_name, th=_thread_id)
-            safe_time = packet_gap_interval + lora_off_time
-            vl.log(var='safe_time', fun=_fun_name, clas=_cls_name, th=_thread_id)
-
-            ########### Broadcast Transmission continue during full wake up interval ##########################
-            while chrono.read() < wakeup_interval - safe_time:
-                print('chrono:', chrono.read(), wakeup_interval - safe_time)
-                data = 'Data'
-                vl.log(var='data', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                packet1 = source_address + ' ' + ' ' + destination_address + ' ' + data + str(packet_number) + ' ' + str(send_time) + ' '
-                vl.log(var='packet1', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                padding = packet_size - len(packet1)
-                vl.log(var='padding', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                zero_padding = '0' * padding
-                vl.log(var='zero_padding', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                packet = packet1 + zero_padding
-                vl.log(var='packet', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
-                vl.log(var='lora', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                s.send(packet)
-                print(packet1)
-                chrono2.start()
-                while chrono2.read() < packet_gap_interval:
+                vl.log(var='Awake_instance', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                time_left = wakeup_interval - chrono3.read()
+                vl.log(var='time_left', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                chrono.stop()
+                chrono.reset()
+                chrono.start()
+                while chrono.read() < time_left:
                     lora = LoRa(power_mode=LoRa.SLEEP, region=LoRa.EU868)
                     vl.log(var='lora', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                chrono2.stop()
-                chrono2.reset()
-                transmissions += 1
-                vl.log(var='transmissions', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                broadcast_time_save += packet_gap_interval
-                vl.log(var='broadcast_time_save', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                send_time += 1
-                vl.log(var='send_time', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                    pycom.rgbled(0x7f0000)
+                    pass
+                lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
+                vl.log(var='lora', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                pycom.rgbled(0x007f00)
+                chrono.stop()
+                chrono.reset()
+                print(chrono3.read())
+                chrono3.stop()
+                chrono3.reset()
+                print(' ')
+            packet_status = False
+            vl.log(var='packet_status', fun=_fun_name, clas=_cls_name, th=_thread_id)
 
-            packet_number += 1
-            vl.log(var='packet_number', fun=_fun_name, clas=_cls_name, th=_thread_id)
+        elif not channel_status :
+            ########### Packet transmission detected and set to receive mode ##########################
+            noise_found = True
+            vl.log(var='noise_found', fun=_fun_name, clas=_cls_name, th=_thread_id)
+            print('Receiving Data')
+            time_now = chrono3.read()
+            vl.log(var='time_now', fun=_fun_name, clas=_cls_name, th=_thread_id)
+
+            ########## Fast sleep optimization ##########################
+            while chrono3.read() < (packet_gap_interval * 1.1 + time_now):
+                cca_list.append(str(lora.ischannel_free(-100)))
+                vl.log(var='cca_list', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                if cca_list.count('True') <= 10 and chrono3.read() > (packet_gap_interval + time_now):
+                    print(cca_list.count('True'))
+                    print(chrono3.read())
+                    noise_found = False
+                    vl.log(var='noise_found', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                    print('Noise Detected')
+                    noise_detected_counter += 1
+                    vl.log(var='noise_detected_counter', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                    break
+            lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
+            vl.log(var='lora', fun=_fun_name, clas=_cls_name, th=_thread_id)
+            cca_list.clear()
+            vl.log(var='cca_list', fun=_fun_name, clas=_cls_name, th=_thread_id)
+            event = 0
+            vl.log(var='event', fun=_fun_name, clas=_cls_name, th=_thread_id)
+            while event != 1 and noise_found:
+                event = lora.events()
+                vl.log(var='event', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                if chrono3.read() >= fast_sleep_threshold:
+                    fast_sleep_time_save += wakeup_interval - fast_sleep_threshold
+                    vl.log(var='fast_sleep_time_save', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                    break
+
+
+
+            ########### Packet reception ##########################
+            rcv_packet = str(s.recv(packet_size))
+            vl.log(var='rcv_packet', fun=_fun_name, clas=_cls_name, th=_thread_id)
+            rcv_packet = rcv_packet[2:-1]
+            vl.log(var='rcv_packet', fun=_fun_name, clas=_cls_name, th=_thread_id)
+            decode_packet = rcv_packet.split()
+            vl.log(var='decode_packet', fun=_fun_name, clas=_cls_name, th=_thread_id)
+            print('decoded packet', decode_packet)
+            if len(decode_packet) >= 6:
+                receiving_data = decode_packet[0] + ' ' + decode_packet[2] + ' ' + decode_packet[3]
+                vl.log(var='receiving_data', fun=_fun_name, clas=_cls_name, th=_thread_id)
+
+                if decode_packet[1] == source_address:
+                    ########### Unicast packet reception ##########################
+                    received_full_data.append(receiving_data)
+                    vl.log(var='received_full_data', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                    ack_packet = decode_packet[1] + ' ' + decode_packet[0] + ' Ack ' + decode_packet[3] + ' ' + decode_packet[4] + ' ' + decode_packet[5]
+                    vl.log(var='ack_packet', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                    print('sending ack')
+                    print(ack_packet)
+                    s.send(ack_packet)
+
+                elif decode_packet[1] == Broadcast_address:
+                    ########### Broadcast packet reception ##########################
+                    received_full_data.append(receiving_data)
+                    vl.log(var='received_full_data', fun=_fun_name, clas=_cls_name, th=_thread_id)
+
+                else:
+                    print('Not For me')
+            else:
+                print('Unexpected Packet')
+                pass
+
+            ########### Information about received packets ##########################
+            print(len(received_full_data))
             alive_time += chrono.read()
             vl.log(var='alive_time', fun=_fun_name, clas=_cls_name, th=_thread_id)
-            Awake_instance += 1
-            vl.log(var='Awake_instance', fun=_fun_name, clas=_cls_name, th=_thread_id)
+            print('Awake_instance {}'.format(Awake_instance))
+            print('Source_address {}'.format(source_address))
+
+            if len(received_full_data) > 0:
+                print('Sender_address {}'.format(received_full_data[-1][0]))   ### source address of sender
+            print('Alive_time {}'.format(alive_time))
+            print('Packets {}'.format(packet_number))
+            print('Duty_Cycle {}'.format((alive_time/3600)*100))
+
+            if transmission_type == 'Unicast':
+                ########### Unicast Information ##########################
+                print('Packets_Received {}'.format(len(received_full_data)))
+                print('failed_attempts {}'.format(failed_attempts))
+                print('phase_lock_time_saving {}'.format(phase_lock_time_saving))
+                print('phase_lock_cca_fails {}'.format(phase_lock_cca_fails))
+                print('Optimized_Duty_Cycle_Unicast {}'.format(((alive_time - phase_lock_time_saving) / 3600) * 100))
+                print('Transmissions {}'.format(transmissions + saved_transmissions))
+                print('Optimized_Transmissions {}'.format(transmissions))
+            else:
+                ########### Broadcast Information ##########################
+                print('Optimized_Duty_Cycle_broadcast {}'.format(((alive_time - broadcast_time_save) / 3600) * 100))
+                print('Packets_Received {}'.format(len(received_full_data)))
+                print('Transmissions {}'.format(transmissions))
+
+            print('noise_detected_counter {}'.format(noise_detected_counter))
+            print('fast_sleep_time_save {}'.format(fast_sleep_time_save))
+
             time_left = wakeup_interval - chrono3.read()
             vl.log(var='time_left', fun=_fun_name, clas=_cls_name, th=_thread_id)
             chrono.stop()
             chrono.reset()
             chrono.start()
+            Awake_instance += 1
+            vl.log(var='Awake_instance', fun=_fun_name, clas=_cls_name, th=_thread_id)
             while chrono.read() < time_left:
+                pycom.rgbled(0x7f0000)
+                lora = LoRa(power_mode=LoRa.SLEEP, region=LoRa.EU868)
+                vl.log(var='lora', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                pass
+            lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
+            vl.log(var='lora', fun=_fun_name, clas=_cls_name, th=_thread_id)
+            pycom.rgbled(0x007f00)
+            chrono.stop()
+            chrono.reset()
+            print(chrono3.read())
+            chrono3.stop()
+            chrono3.reset()
+            print(' ')
+
+        else:
+            ########### No Packet to transmit so going back to sleep mode ##########################
+            print('Going back to Sleep')
+            print('Awake_instance {}'.format(Awake_instance))
+            print('Source_address {}'.format(source_address))
+            cca_list.clear()
+            vl.log(var='cca_list', fun=_fun_name, clas=_cls_name, th=_thread_id)
+            alive_time += chrono.read()
+            vl.log(var='alive_time', fun=_fun_name, clas=_cls_name, th=_thread_id)
+            print('Alive_time {}'.format(alive_time))
+            print('Packets {}'.format(packet_number))
+            print('Duty_Cycle {}'.format((alive_time / 3600) * 100))
+
+            if transmission_type == 'Unicast':
+                ########### Unicast Information ##########################
+                print('Packets_Received {}'.format(len(received_full_data)))
+                print('failed_attempts {}'.format(failed_attempts))
+                print('phase_lock_time_saving {}'.format(phase_lock_time_saving))
+                print('phase_lock_cca_fails {}'.format(phase_lock_cca_fails))
+                print('Optimized_Duty_Cycle_Unicast {}'.format(((alive_time - phase_lock_time_saving) / 3600) * 100))
+                print('Transmissions {}'.format(transmissions + saved_transmissions))
+                print('Optimized_Transmissions {}'.format(transmissions))
+            else:
+                ########### Broadcast Information ##########################
+                print('Optimized_Duty_Cycle_broadcast {}'.format(((alive_time - broadcast_time_save) / 3600) * 100))
+                print('Packets_Received {}'.format(len(received_full_data)))
+                print('Transmissions {}'.format(transmissions))
+            print('noise_detected_counter {}'.format(noise_detected_counter))
+            print('fast_sleep_time_save {}'.format(fast_sleep_time_save))
+            Awake_instance += 1
+            vl.log(var='Awake_instance', fun=_fun_name, clas=_cls_name, th=_thread_id)
+
+            while chrono3.read() < wakeup_interval:
                 lora = LoRa(power_mode=LoRa.SLEEP, region=LoRa.EU868)
                 vl.log(var='lora', fun=_fun_name, clas=_cls_name, th=_thread_id)
                 pycom.rgbled(0x7f0000)
@@ -639,175 +826,25 @@ while True:
             chrono3.stop()
             chrono3.reset()
             print(' ')
-        packet_status = False
-        vl.log(var='packet_status', fun=_fun_name, clas=_cls_name, th=_thread_id)
+        
+        ##### for testing purposes
+        if (utime.ticks_ms() - testing_start - vl.time_to_write)/1000 >= 600: # 10 minutes
+            vl.save()
+            chrono.deinit()
+            chrono1.deinit()
+            chrono2.deinit()
+            chrono3.deinit()
+            print('Timer deinitiated')
+            sys.exit()
 
-    elif not channel_status :
-        ########### Packet transmission detected and set to receive mode ##########################
-        noise_found = True
-        vl.log(var='noise_found', fun=_fun_name, clas=_cls_name, th=_thread_id)
-        print('Receiving Data')
-        time_now = chrono3.read()
-        vl.log(var='time_now', fun=_fun_name, clas=_cls_name, th=_thread_id)
+    except Exception as e:
+        chrono.deinit()
+        chrono1.deinit()
+        chrono2.deinit()
+        chrono3.deinit()
+        print('Timer deinitiated')
+        # write_to_log('main: {}'.format(e), str(current_time))
+        print('Shutting down due to following error in main loop:')
+        print(sys.print_exception(e))
+        sys.exit()
 
-        ########## Fast sleep optimization ##########################
-        while chrono3.read() < (packet_gap_interval * 1.1 + time_now):
-            cca_list.append(str(lora.ischannel_free(-100)))
-            vl.log(var='cca_list', fun=_fun_name, clas=_cls_name, th=_thread_id)
-            if cca_list.count('True') <= 10 and chrono3.read() > (packet_gap_interval + time_now):
-                print(cca_list.count('True'))
-                print(chrono3.read())
-                noise_found = False
-                vl.log(var='noise_found', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                print('Noise Detected')
-                noise_detected_counter += 1
-                vl.log(var='noise_detected_counter', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                break
-        lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
-        vl.log(var='lora', fun=_fun_name, clas=_cls_name, th=_thread_id)
-        cca_list.clear()
-        vl.log(var='cca_list', fun=_fun_name, clas=_cls_name, th=_thread_id)
-        event = 0
-        vl.log(var='event', fun=_fun_name, clas=_cls_name, th=_thread_id)
-        while event != 1 and noise_found:
-            event = lora.events()
-            vl.log(var='event', fun=_fun_name, clas=_cls_name, th=_thread_id)
-            if chrono3.read() >= fast_sleep_threshold:
-                fast_sleep_time_save += wakeup_interval - fast_sleep_threshold
-                vl.log(var='fast_sleep_time_save', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                break
-
-
-
-        ########### Packet reception ##########################
-        rcv_packet = str(s.recv(packet_size))
-        vl.log(var='rcv_packet', fun=_fun_name, clas=_cls_name, th=_thread_id)
-        rcv_packet = rcv_packet[2:-1]
-        vl.log(var='rcv_packet', fun=_fun_name, clas=_cls_name, th=_thread_id)
-        decode_packet = rcv_packet.split()
-        vl.log(var='decode_packet', fun=_fun_name, clas=_cls_name, th=_thread_id)
-        print('decoded packet', decode_packet)
-        if len(decode_packet) >= 6:
-            receiving_data = decode_packet[0] + ' ' + decode_packet[2] + ' ' + decode_packet[3]
-            vl.log(var='receiving_data', fun=_fun_name, clas=_cls_name, th=_thread_id)
-
-            if decode_packet[1] == source_address:
-                ########### Unicast packet reception ##########################
-                received_full_data.append(receiving_data)
-                vl.log(var='received_full_data', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                ack_packet = decode_packet[1] + ' ' + decode_packet[0] + ' Ack ' + decode_packet[3] + ' ' + decode_packet[4] + ' ' + decode_packet[5]
-                vl.log(var='ack_packet', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                print('sending ack')
-                print(ack_packet)
-                s.send(ack_packet)
-
-            elif decode_packet[1] == Broadcast_address:
-                ########### Broadcast packet reception ##########################
-                received_full_data.append(receiving_data)
-                vl.log(var='received_full_data', fun=_fun_name, clas=_cls_name, th=_thread_id)
-
-            else:
-                print('Not For me')
-        else:
-            print('Unexpected Packet')
-            pass
-
-        ########### Information about received packets ##########################
-        print(len(received_full_data))
-        alive_time += chrono.read()
-        vl.log(var='alive_time', fun=_fun_name, clas=_cls_name, th=_thread_id)
-        print('Awake_instance {}'.format(Awake_instance))
-        print('Source_address {}'.format(source_address))
-
-        if len(received_full_data) > 0:
-            print('Sender_address {}'.format(received_full_data[-1][0]))   ### source address of sender
-        print('Alive_time {}'.format(alive_time))
-        print('Packets {}'.format(packet_number))
-        print('Duty_Cycle {}'.format((alive_time/3600)*100))
-
-        if transmission_type == 'Unicast':
-            ########### Unicast Information ##########################
-            print('Packets_Received {}'.format(len(received_full_data)))
-            print('failed_attempts {}'.format(failed_attempts))
-            print('phase_lock_time_saving {}'.format(phase_lock_time_saving))
-            print('phase_lock_cca_fails {}'.format(phase_lock_cca_fails))
-            print('Optimized_Duty_Cycle_Unicast {}'.format(((alive_time - phase_lock_time_saving) / 3600) * 100))
-            print('Transmissions {}'.format(transmissions + saved_transmissions))
-            print('Optimized_Transmissions {}'.format(transmissions))
-        else:
-            ########### Broadcast Information ##########################
-            print('Optimized_Duty_Cycle_broadcast {}'.format(((alive_time - broadcast_time_save) / 3600) * 100))
-            print('Packets_Received {}'.format(len(received_full_data)))
-            print('Transmissions {}'.format(transmissions))
-
-        print('noise_detected_counter {}'.format(noise_detected_counter))
-        print('fast_sleep_time_save {}'.format(fast_sleep_time_save))
-
-        time_left = wakeup_interval - chrono3.read()
-        vl.log(var='time_left', fun=_fun_name, clas=_cls_name, th=_thread_id)
-        chrono.stop()
-        chrono.reset()
-        chrono.start()
-        Awake_instance += 1
-        vl.log(var='Awake_instance', fun=_fun_name, clas=_cls_name, th=_thread_id)
-        while chrono.read() < time_left:
-            pycom.rgbled(0x7f0000)
-            lora = LoRa(power_mode=LoRa.SLEEP, region=LoRa.EU868)
-            vl.log(var='lora', fun=_fun_name, clas=_cls_name, th=_thread_id)
-            pass
-        lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
-        vl.log(var='lora', fun=_fun_name, clas=_cls_name, th=_thread_id)
-        pycom.rgbled(0x007f00)
-        chrono.stop()
-        chrono.reset()
-        print(chrono3.read())
-        chrono3.stop()
-        chrono3.reset()
-        print(' ')
-
-    else:
-        ########### No Packet to transmit so going back to sleep mode ##########################
-        print('Going back to Sleep')
-        print('Awake_instance {}'.format(Awake_instance))
-        print('Source_address {}'.format(source_address))
-        cca_list.clear()
-        vl.log(var='cca_list', fun=_fun_name, clas=_cls_name, th=_thread_id)
-        alive_time += chrono.read()
-        vl.log(var='alive_time', fun=_fun_name, clas=_cls_name, th=_thread_id)
-        print('Alive_time {}'.format(alive_time))
-        print('Packets {}'.format(packet_number))
-        print('Duty_Cycle {}'.format((alive_time / 3600) * 100))
-
-        if transmission_type == 'Unicast':
-            ########### Unicast Information ##########################
-            print('Packets_Received {}'.format(len(received_full_data)))
-            print('failed_attempts {}'.format(failed_attempts))
-            print('phase_lock_time_saving {}'.format(phase_lock_time_saving))
-            print('phase_lock_cca_fails {}'.format(phase_lock_cca_fails))
-            print('Optimized_Duty_Cycle_Unicast {}'.format(((alive_time - phase_lock_time_saving) / 3600) * 100))
-            print('Transmissions {}'.format(transmissions + saved_transmissions))
-            print('Optimized_Transmissions {}'.format(transmissions))
-        else:
-            ########### Broadcast Information ##########################
-            print('Optimized_Duty_Cycle_broadcast {}'.format(((alive_time - broadcast_time_save) / 3600) * 100))
-            print('Packets_Received {}'.format(len(received_full_data)))
-            print('Transmissions {}'.format(transmissions))
-        print('noise_detected_counter {}'.format(noise_detected_counter))
-        print('fast_sleep_time_save {}'.format(fast_sleep_time_save))
-        Awake_instance += 1
-        vl.log(var='Awake_instance', fun=_fun_name, clas=_cls_name, th=_thread_id)
-
-        while chrono3.read() < wakeup_interval:
-            lora = LoRa(power_mode=LoRa.SLEEP, region=LoRa.EU868)
-            vl.log(var='lora', fun=_fun_name, clas=_cls_name, th=_thread_id)
-            pycom.rgbled(0x7f0000)
-            pass
-        lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
-        vl.log(var='lora', fun=_fun_name, clas=_cls_name, th=_thread_id)
-        pycom.rgbled(0x007f00)
-        chrono.stop()
-        chrono.reset()
-        print(chrono3.read())
-        chrono3.stop()
-        chrono3.reset()
-        print(' ')
