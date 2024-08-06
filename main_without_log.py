@@ -596,18 +596,10 @@ while True:
         ##### for testing purposes
         if (utime.ticks_ms() - testing_start - vl.time_to_write)/1000 >= 600: # 10 minutes
             vl.save()
-            chrono.deinit()
-            chrono1.deinit()
-            chrono2.deinit()
-            chrono3.deinit()
             print('Timer deinitiated')
             sys.exit()
 
     except Exception as e:
-        chrono.deinit()
-        chrono1.deinit()
-        chrono2.deinit()
-        chrono3.deinit()
         print('Timer deinitiated')
         # write_to_log('main: {}'.format(e), str(current_time))
         print('Shutting down due to following error in main loop:')
