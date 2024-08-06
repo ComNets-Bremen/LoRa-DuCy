@@ -102,7 +102,7 @@ wakeup_interval = 20
 vl.log(var='wakeup_interval', fun=_fun_name, clas=_cls_name, th=_thread_id)
 fast_sleep_threshold = 2.5
 vl.log(var='fast_sleep_threshold', fun=_fun_name, clas=_cls_name, th=_thread_id)
-transmission_type = 'Broadcast'  #Unicast or Broadcast
+transmission_type = 'Unicast'  #Unicast or Broadcast
 vl.log(var='transmission_type', fun=_fun_name, clas=_cls_name, th=_thread_id)
 num_of_packets = 10
 vl.log(var='num_of_packets', fun=_fun_name, clas=_cls_name, th=_thread_id)
@@ -132,7 +132,7 @@ failed_attempts = 0
 vl.log(var='failed_attempts', fun=_fun_name, clas=_cls_name, th=_thread_id)
 phase_lock_cca_fails = 0
 vl.log(var='phase_lock_cca_fails', fun=_fun_name, clas=_cls_name, th=_thread_id)
-Awake_instance = 0
+Awake_instance = 1
 vl.log(var='Awake_instance', fun=_fun_name, clas=_cls_name, th=_thread_id)
 broadcast_time_save = 0
 vl.log(var='broadcast_time_save', fun=_fun_name, clas=_cls_name, th=_thread_id)
@@ -207,16 +207,17 @@ def packet_check(packet_status, s=Awake_instance, g=packet_number):
     _cls_name = '0'
     _thread_id = _thread.get_ident()
 
-    if not packet_status:
-        number = (Awake_instance % 4) - my_number
-        vl.log(var='number', fun=_fun_name, clas=_cls_name, th=_thread_id)
+    # if not packet_status:
+    total_nodes = number_of_neighbours+1
+    number = (Awake_instance % total_nodes) - my_number
+    vl.log(var='number', fun=_fun_name, clas=_cls_name, th=_thread_id)
 
-        if packet_number < num_of_packets and (number == 0):
-            return True
-        else:
-            return False
+    if packet_number < num_of_packets and (number == 0 or number == -total_nodes):
+        return True
     else:
-        return packet_status
+        return False
+    # else:
+    #     return packet_status
 
 
 
@@ -284,7 +285,7 @@ while not neighbour_discover:
             vl.log(var='neighbor_adresses', fun=_fun_name, clas=_cls_name, th=_thread_id)
             if len(neighbor_adresses) == number_of_neighbours:
                 break
-    time.sleep(1)
+    # time.sleep(1)
 
 print('Neighbour Addresses:', neighbor_adresses)
 Broadcast_address = 'All'

@@ -85,7 +85,7 @@ phase_lock_time_saving = 0
 saved_transmissions = 0
 failed_attempts = 0
 phase_lock_cca_fails = 0
-Awake_instance = 0
+Awake_instance = 1
 broadcast_time_save = 0
 fast_sleep_time_save = 0
 Full_send_time = 0
@@ -125,8 +125,9 @@ def RandomRange(rfrom, rto):
 ############## Random packet generation ################
 def packet_check(packet_status, s=Awake_instance, g=packet_number):
     if not packet_status:
-        number = (Awake_instance % 4) - my_number
-        if packet_number < num_of_packets and (number == 0):
+        total_nodes = number_of_neighbours+1
+        number = (Awake_instance % total_nodes) - my_number
+        if packet_number < num_of_packets and (number == 0 or number == -total_nodes):
             return True
         else:
             return False
@@ -186,7 +187,7 @@ while not neighbour_discover:
             neighbor_adresses.append(neighbor)
             if len(neighbor_adresses) == number_of_neighbours:
                 break
-    time.sleep(1)
+    # time.sleep(1)
 
 print('Neighbour Addresses:', neighbor_adresses)
 Broadcast_address = 'All'
