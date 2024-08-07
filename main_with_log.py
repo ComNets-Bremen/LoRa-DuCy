@@ -166,7 +166,7 @@ max_wait_time = 1 * wakeup_interval
 vl.log(var='max_wait_time', fun=_fun_name, clas=_cls_name, th=_thread_id)
 lora_off_time = 0.6
 vl.log(var='lora_off_time', fun=_fun_name, clas=_cls_name, th=_thread_id)
-packet_gap_interval = 0.5
+packet_gap_interval = 1
 vl.log(var='packet_gap_interval', fun=_fun_name, clas=_cls_name, th=_thread_id)
 pll_activation = 2.0
 vl.log(var='pll_activation', fun=_fun_name, clas=_cls_name, th=_thread_id)
@@ -207,17 +207,17 @@ def packet_check(packet_status, s=Awake_instance, g=packet_number):
     _cls_name = '0'
     _thread_id = _thread.get_ident()
 
-    # if not packet_status:
-    total_nodes = number_of_neighbours+1
-    number = (Awake_instance % total_nodes) - my_number
-    vl.log(var='number', fun=_fun_name, clas=_cls_name, th=_thread_id)
+    if not packet_status:
+        total_nodes = number_of_neighbours+1
+        number = (Awake_instance % total_nodes) - my_number
+        vl.log(var='number', fun=_fun_name, clas=_cls_name, th=_thread_id)
 
-    if packet_number < num_of_packets and (number == 0 or number == -total_nodes):
-        return True
+        if packet_number < num_of_packets and (number == 0 or number == -total_nodes):
+            return True
+        else:
+            return False
     else:
-        return False
-    # else:
-    #     return packet_status
+        return packet_status
 
 
 
@@ -458,7 +458,7 @@ while True:
                         decode_packet = rcv_packet1.split()
                         vl.log(var='decode_packet', fun=_fun_name, clas=_cls_name, th=_thread_id)
                         if len(decode_packet) >= 5:
-                            if decode_packet[3] == str(packet_number) and decode_packet[1] == source_address:
+                            if decode_packet[3] == str(send_time) and decode_packet[1] == source_address:
                                 if send_time_updated:
                                     period = int(decode_packet[4]) // Full_send_time
                                     vl.log(var='period', fun=_fun_name, clas=_cls_name, th=_thread_id)
@@ -514,21 +514,24 @@ while True:
                         vl.log(var='rcv_packet1', fun=_fun_name, clas=_cls_name, th=_thread_id)
                         decode_packet = rcv_packet1.split()
                         vl.log(var='decode_packet', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                        print(decode_packet)
                         if len(decode_packet) >= 5:
-                            if decode_packet[3] == str(packet_number) and decode_packet[1] == source_address:
+                            print('conditions:', decode_packet[3] == str(send_time),  decode_packet[1] == source_address)
+                            print(decode_packet[3], str(send_time))
+                            if decode_packet[3] == str(send_time) and decode_packet[1] == source_address:
                                 ########### Comment this to Disable PLL #####################
-                                if send_time_updated:
-                                    period = int(decode_packet[4]) // Full_send_time
-                                    vl.log(var='period', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                                    phase_lock_optimization[decode_packet[0]] = int(decode_packet[4]) - (Full_send_time + 3) * period
-                                    vl.log(var='phase_lock_optimization', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                                else:
-                                    phase_lock_optimization[decode_packet[0]] = decode_packet[4]
-                                    vl.log(var='phase_lock_optimization', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                                    phase_lock_optimization_time[decode_packet[0]] = decode_packet[5]
-                                    vl.log(var='phase_lock_optimization_time', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                                print(phase_lock_optimization)
-                                print(phase_lock_optimization_time)
+                                # if send_time_updated:
+                                #     period = int(decode_packet[4]) // Full_send_time
+                                #     vl.log(var='period', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                                #     phase_lock_optimization[decode_packet[0]] = int(decode_packet[4]) - (Full_send_time + 3) * period
+                                #     vl.log(var='phase_lock_optimization', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                                # else:
+                                #     phase_lock_optimization[decode_packet[0]] = decode_packet[4]
+                                #     vl.log(var='phase_lock_optimization', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                                #     phase_lock_optimization_time[decode_packet[0]] = decode_packet[5]
+                                #     vl.log(var='phase_lock_optimization_time', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                                # print(phase_lock_optimization)
+                                # print(phase_lock_optimization_time)
                                 print('Ack received for packet {}'.format(packet_number))
 
                                 ack_data_packets.append(rcv_packet1)
@@ -735,8 +738,8 @@ while True:
             print('Awake_instance {}'.format(Awake_instance))
             print('Source_address {}'.format(source_address))
 
-            if len(received_full_data) > 0:
-                print('Sender_address {}'.format(received_full_data[-1][0]))   ### source address of sender
+            if len(decode_packet) >= 6:
+                print('Sender_address {}'.format(decode_packet[0]))   ### source address of sender
             print('Alive_time {}'.format(alive_time))
             print('Packets {}'.format(packet_number))
             print('Duty_Cycle {}'.format((alive_time/3600)*100))
@@ -835,6 +838,7 @@ while True:
             sys.exit()
 
     except Exception as e:
+        print('Timer deinitiated')
         # write_to_log('main: {}'.format(e), str(current_time))
         print('Shutting down due to following error in main loop:')
         print(sys.print_exception(e))

@@ -69,7 +69,7 @@ chrono3 = Timer.Chrono()
 ############ Configurable Parameters #################
 wakeup_interval = 20
 fast_sleep_threshold = 2.5
-transmission_type = 'Broadcast'  #Unicast or Broadcast
+transmission_type = 'Unicast'  #Unicast or Broadcast
 num_of_packets = 10
 pll_threshold = 7
 cca_duration = 0.08
@@ -102,7 +102,7 @@ phase_lock_optimization = {}
 phase_lock_optimization_time = {}
 max_wait_time = 1 * wakeup_interval
 lora_off_time = 0.6
-packet_gap_interval = 0.5
+packet_gap_interval = 1
 pll_activation = 2.0
 sleep_in_pll = 1.9
 transmission_in_pll = 1.8
@@ -212,8 +212,6 @@ while True:
         print('Time since started:', utime.ticks_ms()- testing_start - vl.time_to_write )
         ##### for testing purposes ######
 
-
-
         chrono.start()
         chrono3.start()
         channel_status = cca(chrono, cca_list)
@@ -307,7 +305,7 @@ while True:
                         rcv_packet1 = rcv_packet1[2:-1]
                         decode_packet = rcv_packet1.split()
                         if len(decode_packet) >= 5:
-                            if decode_packet[3] == str(packet_number) and decode_packet[1] == source_address:
+                            if decode_packet[3] == str(send_time) and decode_packet[1] == source_address:
                                 if send_time_updated:
                                     period = int(decode_packet[4]) // Full_send_time
                                     phase_lock_optimization[decode_packet[0]] = int(decode_packet[4]) - (Full_send_time + 3) * period
@@ -345,17 +343,20 @@ while True:
                         rcv_packet1 = str(s.recv(packet_size))
                         rcv_packet1 = rcv_packet1[2:-1]
                         decode_packet = rcv_packet1.split()
+                        print(decode_packet)
                         if len(decode_packet) >= 5:
-                            if decode_packet[3] == str(packet_number) and decode_packet[1] == source_address:
+                            print('conditions:', decode_packet[3] == str(send_time),  decode_packet[1] == source_address)
+                            print(decode_packet[3], str(send_time))
+                            if decode_packet[3] == str(send_time) and decode_packet[1] == source_address:
                                 ########### Comment this to Disable PLL #####################
-                                if send_time_updated:
-                                    period = int(decode_packet[4]) // Full_send_time
-                                    phase_lock_optimization[decode_packet[0]] = int(decode_packet[4]) - (Full_send_time + 3) * period
-                                else:
-                                    phase_lock_optimization[decode_packet[0]] = decode_packet[4]
-                                    phase_lock_optimization_time[decode_packet[0]] = decode_packet[5]
-                                print(phase_lock_optimization)
-                                print(phase_lock_optimization_time)
+                                # if send_time_updated:
+                                #     period = int(decode_packet[4]) // Full_send_time
+                                #     phase_lock_optimization[decode_packet[0]] = int(decode_packet[4]) - (Full_send_time + 3) * period
+                                # else:
+                                #     phase_lock_optimization[decode_packet[0]] = decode_packet[4]
+                                #     phase_lock_optimization_time[decode_packet[0]] = decode_packet[5]
+                                # print(phase_lock_optimization)
+                                # print(phase_lock_optimization_time)
                                 print('Ack received for packet {}'.format(packet_number))
                                 ack_data_packets.append(rcv_packet1)
                                 print(len(ack_data_packets))
@@ -510,8 +511,8 @@ while True:
             print('Awake_instance {}'.format(Awake_instance))
             print('Source_address {}'.format(source_address))
 
-            if len(received_full_data) > 0:
-                print('Sender_address {}'.format(received_full_data[-1][0]))   ### source address of sender
+            if len(decode_packet) >= 6:
+                print('Sender_address {}'.format(decode_packet[0]))   ### source address of sender
             print('Alive_time {}'.format(alive_time))
             print('Packets {}'.format(packet_number))
             print('Duty_Cycle {}'.format((alive_time/3600)*100))
