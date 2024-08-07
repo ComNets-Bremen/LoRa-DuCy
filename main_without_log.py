@@ -306,12 +306,10 @@ while True:
                         time.sleep(packet_gap_interval)
                         rcv_packet1 = s.recv(packet_size)
                         if len(rcv_packet1) == packet_size:
-                            string_data = ustruct.unpack('!15s', rcv_packet1[:15])[0]
-                            rx_data_number = ustruct.unpack('!B',rcv_packet1[15:16])[0]
-                            rx_sent_time = ustruct.unpack('!B',rcv_packet1[17:18])[0]
-                            rx_tx_time = ustruct.unpack('!f',rcv_packet1[19:23])[0]
-                            rx_padding = rcv_packet[23:]
-                            rcv_packet1 = str(string_data)[2:-1] + str(rx_data_number) + ' ' + str(rx_sent_time) + ' ' + str(rx_tx_time) + str(rx_padding)[2:-1]
+                            string_data = ustruct.unpack('!20s', rcv_packet1[:20])[0]
+                            rx_tx_time = ustruct.unpack('!f',rcv_packet1[20:24])[0]
+                            rx_padding = rcv_packet1[24:]
+                            rcv_packet1 = str(string_data)[2:-1] + ' ' + str(rx_tx_time) + '' + str(rx_padding)[2:-1]
                         print('rx. pkt', rcv_packet1, len(rcv_packet1))
                         # rcv_packet1 = rcv_packet1[2:-1]
                         decode_packet = rcv_packet1.split()
@@ -354,12 +352,10 @@ while True:
                         time.sleep(packet_gap_interval)
                         rcv_packet1 = s.recv(packet_size)
                         if len(rcv_packet1) == packet_size:
-                            string_data = ustruct.unpack('!15s', rcv_packet1[:15])[0]
-                            rx_data_number = ustruct.unpack('!B',rcv_packet1[15:16])[0]
-                            rx_sent_time = ustruct.unpack('!B',rcv_packet1[17:18])[0]
-                            rx_tx_time = ustruct.unpack('!f',rcv_packet1[19:23])[0]
-                            rx_padding = rcv_packet1[23:]
-                            rcv_packet1 = str(string_data)[2:-1] + str(rx_data_number) + ' ' + str(rx_sent_time) + ' ' + str(rx_tx_time) + str(rx_padding)[2:-1]
+                            string_data = ustruct.unpack('!20s', rcv_packet1[:20])[0]
+                            rx_tx_time = ustruct.unpack('!f',rcv_packet1[20:24])[0]
+                            rx_padding = rcv_packet1[24:]
+                            rcv_packet1 = str(string_data)[2:-1] + ' ' + str(rx_tx_time) + '' + str(rx_padding)[2:-1]
                         print('rx. pkt', rcv_packet1, len(rcv_packet1))
                         # rcv_packet1 = rcv_packet1[2:-1]
                         decode_packet = rcv_packet1.split()
@@ -502,7 +498,8 @@ while True:
 
             ########### Packet reception ##########################
             rcv_packet = s.recv(packet_size)
-            if len(rcv_packet) == packet_size:
+            print(len(rcv_packet))
+            if len(rcv_packet) > 0:
                 string_data = ustruct.unpack('!15s', rcv_packet[:15])[0]
                 rx_data_number = ustruct.unpack('!B',rcv_packet[15:16])[0]
                 rx_sent_time = ustruct.unpack('!B',rcv_packet[17:18])[0]
@@ -513,13 +510,17 @@ while True:
             # rcv_packet = rcv_packet[2:-1]
             decode_packet = rcv_packet.split()
             print('decoded packet', decode_packet)
-            if len(decode_packet) >= 5:
+            if len(decode_packet) >= 6:
                 receiving_data = decode_packet[0] + ' ' + decode_packet[2] + ' ' + decode_packet[3]
 
                 if decode_packet[1] == source_address:
                     ########### Unicast packet reception ##########################
                     received_full_data.append(receiving_data)
-                    ack_packet = decode_packet[1] + ' ' + decode_packet[0] + ' Ack ' + decode_packet[2] + ' ' + decode_packet[4] + ' ' + decode_packet[5]
+                    ack_packet = ustruct.pack('!20s', decode_packet[1] + ' ' + decode_packet[0] + ' Ack ' + decode_packet[2] + ' ' )
+                    ack_packet += ustruct.pack('!f', float(decode_packet[4])) + ''
+                    padding = packet_size - len(ack_packet)
+                    zero_padding = '0' * padding
+                    ack_packet = ack_packet + zero_padding
                     print('sending ack')
                     print(ack_packet)
                     s.send(ack_packet)
