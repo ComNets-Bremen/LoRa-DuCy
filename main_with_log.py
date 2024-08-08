@@ -14,6 +14,7 @@ import _thread
 import gc
 import sys
 import utime
+import ustruct
 
 '''
 Implemented of LoPy4/Fipy with 1.18 pycom-micropython version
@@ -178,8 +179,8 @@ vl.log(var='transmission_in_pll', fun=_fun_name, clas=_cls_name, th=_thread_id)
 ############## Delay to avoid CCA overlap ############
 number2 = (wakeup_interval - 2) / 10
 vl.log(var='number2', fun=_fun_name, clas=_cls_name, th=_thread_id)
-print((my_number - 1) * number2)
-time.sleep((my_number - 1) * number2)
+# print((my_number - 1) * number2)
+# time.sleep((my_number - 1) * number2)
 
 
 
@@ -392,7 +393,8 @@ while True:
 
                                 if cca():
                                     ########### Channel is free and transmission with PLL starts ##########################
-                                    packet1 = source_address + ' ' + ' ' + destination_address + ' ' + data + str(packet_number) + ' ' + str(send_time) + ' ' + str(chrono.read()) + ' '
+                                    packet1 = ustruct.pack('!15s', source_address + ' ' + ' ' + destination_address + ' ' + data)
+                                    packet1 += ustruct.pack('!B', packet_number) + ' ' + ustruct.pack('!B', send_time) + ' ' + ustruct.pack('!f',round(chrono.read(),2)) + ' '
                                     vl.log(var='packet1', fun=_fun_name, clas=_cls_name, th=_thread_id)
                                     padding = packet_size - len(packet1)
                                     vl.log(var='padding', fun=_fun_name, clas=_cls_name, th=_thread_id) 
@@ -405,7 +407,7 @@ while True:
                                     vl.log(var='transmissions', fun=_fun_name, clas=_cls_name, th=_thread_id)
                                     phase_lock_transmissions += 1
                                     vl.log(var='phase_lock_transmissions', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                                    print(packet1)
+                                    print(packet1[:15] + str(ustruct.unpack('!B', packet1[15:16])[0]) + ' ' + str(ustruct.unpack('!B', packet1[17:18])[0]) + ' ' + str(ustruct.unpack('!f', packet1[19:23])[0]) + ' ')
                                 else:
                                     ########### Channel is busy ##########################
                                     phase_lock_cca_fails += 1
@@ -414,7 +416,8 @@ while True:
                                     vl.log(var='Phase_Lock_channel_check', fun=_fun_name, clas=_cls_name, th=_thread_id)
                                     break
                             else:
-                                packet1 = source_address + ' ' + ' ' + destination_address + ' ' + data + str(packet_number) + ' ' + str(send_time) + ' ' + str(chrono.read()) + ' '
+                                packet1 = ustruct.pack('!15s', source_address + ' ' + ' ' + destination_address + ' ' + data)
+                                packet1 += ustruct.pack('!B', packet_number) + ' ' + ustruct.pack('!B', send_time) + ' ' + ustruct.pack('!f',round(chrono.read(),2)) + ' '
                                 vl.log(var='packet1', fun=_fun_name, clas=_cls_name, th=_thread_id)
                                 padding = packet_size - len(packet1)
                                 vl.log(var='padding', fun=_fun_name, clas=_cls_name, th=_thread_id)
@@ -427,7 +430,7 @@ while True:
                                 vl.log(var='transmissions', fun=_fun_name, clas=_cls_name, th=_thread_id)
                                 phase_lock_transmissions += 1
                                 vl.log(var='phase_lock_transmissions', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                                print(packet1)
+                                print(packet1[:15] + str(ustruct.unpack('!B', packet1[15:16])[0]) + ' ' + str(ustruct.unpack('!B', packet1[17:18])[0]) + ' ' + str(ustruct.unpack('!f', packet1[19:23])[0]) + ' ')
 
                         elif phase_lock_transmissions >= pll_threshold:
                             ########### If neighbour is not responding remove neighbour from PLL ##########################
@@ -451,14 +454,20 @@ while True:
 
                         ########### Receiving the Acknowledgement ##########################
                         time.sleep(packet_gap_interval)
-                        rcv_packet1 = str(s.recv(packet_size))
+                        rcv_packet1 = s.recv(packet_size)
                         vl.log(var='rcv_packet1', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                        rcv_packet1 = rcv_packet1[2:-1]
-                        vl.log(var='rcv_packet1', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                        print('len Ack1', rcv_packet1, len(rcv_packet1))
+                        if len(rcv_packet1) == packet_size:
+                            string_data = ustruct.unpack('!20s', rcv_packet1[:20])[0]
+                            rx_tx_time = ustruct.unpack('!f',rcv_packet1[20:24])[0]
+                            rx_padding = rcv_packet1[24:]
+                            rcv_packet1 = str(string_data)[2:-1] + ' ' + str(rx_tx_time) + ' ' + str(rx_padding)[2:-1]
+                            vl.log(var='rcv_packet1', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                        # rcv_packet1 = rcv_packet1[2:-1]
                         decode_packet = rcv_packet1.split()
                         vl.log(var='decode_packet', fun=_fun_name, clas=_cls_name, th=_thread_id)
                         if len(decode_packet) >= 5:
-                            if decode_packet[3] == str(send_time) and decode_packet[1] == source_address:
+                            if decode_packet[3] == data+str(packet_number) and decode_packet[1] == source_address:
                                 if send_time_updated:
                                     period = int(decode_packet[4]) // Full_send_time
                                     vl.log(var='period', fun=_fun_name, clas=_cls_name, th=_thread_id)
@@ -486,7 +495,8 @@ while True:
                     ########### Transmission without PLL ##########################
                     while not ack and chrono.read() < max_wait_time:
                         ########### Transmission continue until the acknowledgement ##########################
-                        packet1 = source_address + ' ' + ' ' + destination_address + ' ' + data + str(packet_number) + ' ' + str(send_time) + ' ' + str(chrono.read()) + ' '
+                        packet1 = ustruct.pack('!15s', source_address + ' ' + ' ' + destination_address + ' ' + data)
+                        packet1 += ustruct.pack('!B', packet_number) + ' ' + ustruct.pack('!B', send_time) + ' ' + ustruct.pack('!f',round(chrono.read(),2)) + ' '
                         vl.log(var='packet1', fun=_fun_name, clas=_cls_name, th=_thread_id)
                         padding = packet_size - len(packet1)
                         vl.log(var='padding', fun=_fun_name, clas=_cls_name, th=_thread_id)
@@ -495,7 +505,7 @@ while True:
                         packet = packet1 + zero_padding
                         vl.log(var='packet', fun=_fun_name, clas=_cls_name, th=_thread_id)
                         s.send(packet)
-                        print(packet1)
+                        print(packet1[:15] + str(ustruct.unpack('!B', packet1[15:16])[0]) + ' ' + str(ustruct.unpack('!B', packet1[17:18])[0]) + ' ' + str(ustruct.unpack('!f', packet1[19:23])[0]) + ' ')
                         transmissions += 1
                         vl.log(var='transmissions', fun=_fun_name, clas=_cls_name, th=_thread_id)
 
@@ -508,17 +518,23 @@ while True:
 
                         ########### Receiving the Acknowledgement ##########################
                         time.sleep(packet_gap_interval)
-                        rcv_packet1 = str(s.recv(packet_size))
+                        rcv_packet1 = s.recv(packet_size)
                         vl.log(var='rcv_packet1', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                        rcv_packet1 = rcv_packet1[2:-1]
-                        vl.log(var='rcv_packet1', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                        print('length of Ack2', rcv_packet1, len(rcv_packet1))
+                        if len(rcv_packet1) == packet_size:
+                            string_data = ustruct.unpack('!20s', rcv_packet1[:20])[0]
+                            rx_tx_time = ustruct.unpack('!f',rcv_packet1[20:24])[0]
+                            rx_padding = rcv_packet1[24:]
+                            rcv_packet1 = str(string_data)[2:-1] + ' ' + str(rx_tx_time) + ' ' + str(rx_padding)[2:-1]
+                            vl.log(var='rcv_packet1', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                        # rcv_packet1 = rcv_packet1[2:-1]
                         decode_packet = rcv_packet1.split()
                         vl.log(var='decode_packet', fun=_fun_name, clas=_cls_name, th=_thread_id)
                         print(decode_packet)
                         if len(decode_packet) >= 5:
-                            print('conditions:', decode_packet[3] == str(send_time),  decode_packet[1] == source_address)
-                            print(decode_packet[3], str(send_time))
-                            if decode_packet[3] == str(send_time) and decode_packet[1] == source_address:
+                            print('conditions:', decode_packet[3] == data+str(packet_number),  decode_packet[1] == source_address)
+                            print(decode_packet[3], data+str(packet_number))
+                            if decode_packet[3] == data+str(packet_number) and decode_packet[1] == source_address:
                                 ########### Comment this to Disable PLL #####################
                                 # if send_time_updated:
                                 #     period = int(decode_packet[4]) // Full_send_time
@@ -546,8 +562,8 @@ while True:
 
                 if chrono.read() >= max_wait_time:
                     ########### Remove not responding neighbours ##########################
-                    neighbor_adresses.remove(destination_address)
-                    vl.log(var='neighbor_adresses', fun=_fun_name, clas=_cls_name, th=_thread.get_ident())
+                    # neighbor_adresses.remove(destination_address)
+                    # vl.log(var='neighbor_adresses', fun=_fun_name, clas=_cls_name, th=_thread.get_ident())
                     print(neighbor_adresses)
 
                 if len(neighbor_adresses) == 0:
@@ -608,7 +624,8 @@ while True:
                     print('chrono:', chrono.read(), wakeup_interval - safe_time)
                     data = 'Data'
                     vl.log(var='data', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                    packet1 = source_address + ' ' + ' ' + destination_address + ' ' + data + str(packet_number) + ' ' + str(send_time) + ' '
+                    packet1 = ustruct.pack('!15s', source_address + ' ' + ' ' + destination_address + ' ' + data)
+                    packet1 += ustruct.pack('!B', packet_number) + ' ' + ustruct.pack('!B', send_time) + ' ' + ustruct.pack('!f',round(chrono.read(),2)) + ' '                    
                     vl.log(var='packet1', fun=_fun_name, clas=_cls_name, th=_thread_id)
                     padding = packet_size - len(packet1)
                     vl.log(var='padding', fun=_fun_name, clas=_cls_name, th=_thread_id)
@@ -619,7 +636,7 @@ while True:
                     lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
                     vl.log(var='lora', fun=_fun_name, clas=_cls_name, th=_thread_id)
                     s.send(packet)
-                    print(packet1)
+                    print(packet1[:15] + str(ustruct.unpack('!B', packet1[15:16])[0]) + ' ' + str(ustruct.unpack('!B', packet1[17:18])[0]) + ' ' + str(ustruct.unpack('!f', packet1[19:23])[0]) + ' ')
                     chrono2.start()
                     while chrono2.read() < packet_gap_interval:
                         lora = LoRa(power_mode=LoRa.SLEEP, region=LoRa.EU868)
@@ -699,10 +716,18 @@ while True:
 
 
             ########### Packet reception ##########################
-            rcv_packet = str(s.recv(packet_size))
+            rcv_packet = s.recv(packet_size)
             vl.log(var='rcv_packet', fun=_fun_name, clas=_cls_name, th=_thread_id)
-            rcv_packet = rcv_packet[2:-1]
-            vl.log(var='rcv_packet', fun=_fun_name, clas=_cls_name, th=_thread_id)
+            print('rx. pkt', rcv_packet, len(rcv_packet))
+            if len(rcv_packet) > 0:
+                string_data = ustruct.unpack('!15s', rcv_packet[:15])[0]
+                rx_data_number = ustruct.unpack('!B',rcv_packet[15:16])[0]
+                rx_sent_time = ustruct.unpack('!B',rcv_packet[17:18])[0]
+                rx_tx_time = ustruct.unpack('!f',rcv_packet[19:23])[0]
+                rx_padding = rcv_packet[23:]
+                rcv_packet = str(string_data)[2:-1] + str(rx_data_number) + ' ' + str(rx_sent_time) + ' ' + str(rx_tx_time) + str(rx_padding)[2:-1]
+                vl.log(var='rcv_packet', fun=_fun_name, clas=_cls_name, th=_thread_id)
+            # rcv_packet = rcv_packet[2:-1]
             decode_packet = rcv_packet.split()
             vl.log(var='decode_packet', fun=_fun_name, clas=_cls_name, th=_thread_id)
             print('decoded packet', decode_packet)
@@ -714,10 +739,14 @@ while True:
                     ########### Unicast packet reception ##########################
                     received_full_data.append(receiving_data)
                     vl.log(var='received_full_data', fun=_fun_name, clas=_cls_name, th=_thread_id)
-                    ack_packet = decode_packet[1] + ' ' + decode_packet[0] + ' Ack ' + decode_packet[3] + ' ' + decode_packet[4] + ' ' + decode_packet[5]
+                    ack_packet = ustruct.pack('!20s', decode_packet[1] + ' ' + decode_packet[0] + ' Ack ' + decode_packet[2] + ' ' )
+                    ack_packet += ustruct.pack('!f', float(decode_packet[4])) + ' '
                     vl.log(var='ack_packet', fun=_fun_name, clas=_cls_name, th=_thread_id)
+                    padding = packet_size - len(ack_packet)
+                    zero_padding = '0' * padding
+                    ack_packet = ack_packet + zero_padding
                     print('sending ack')
-                    print(ack_packet)
+                    print(ack_packet, len(ack_packet))
                     s.send(ack_packet)
 
                 elif decode_packet[1] == Broadcast_address:

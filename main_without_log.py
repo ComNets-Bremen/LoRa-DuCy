@@ -110,8 +110,8 @@ transmission_in_pll = 1.8
 
 ############## Delay to avoid CCA overlap ############
 number2 = (wakeup_interval - 2) / 10
-print((my_number - 1) * number2)
-time.sleep((my_number - 1) * number2)
+# print((my_number - 1) * number2)
+# time.sleep((my_number - 1) * number2)
 
 
 
@@ -306,7 +306,7 @@ while True:
                         time.sleep(packet_gap_interval)
                         rcv_packet1 = s.recv(packet_size)
                         print('len Ack1', rcv_packet1, len(rcv_packet1))
-                        if len(rcv_packet1) > 0:
+                        if len(rcv_packet1) == packet_size:
                             string_data = ustruct.unpack('!20s', rcv_packet1[:20])[0]
                             rx_tx_time = ustruct.unpack('!f',rcv_packet1[20:24])[0]
                             rx_padding = rcv_packet1[24:]
@@ -352,7 +352,7 @@ while True:
                         time.sleep(packet_gap_interval)
                         rcv_packet1 = s.recv(packet_size)
                         print('length of Ack2', rcv_packet1, len(rcv_packet1))
-                        if len(rcv_packet1) > 0:
+                        if len(rcv_packet1) == packet_size:
                             string_data = ustruct.unpack('!20s', rcv_packet1[:20])[0]
                             rx_tx_time = ustruct.unpack('!f',rcv_packet1[20:24])[0]
                             rx_padding = rcv_packet1[24:]

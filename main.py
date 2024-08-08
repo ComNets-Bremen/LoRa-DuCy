@@ -305,12 +305,12 @@ while True:
                         ########### Receiving the Acknowledgement ##########################
                         time.sleep(packet_gap_interval)
                         rcv_packet1 = s.recv(packet_size)
+                        print('len Ack1', rcv_packet1, len(rcv_packet1))
                         if len(rcv_packet1) == packet_size:
                             string_data = ustruct.unpack('!20s', rcv_packet1[:20])[0]
                             rx_tx_time = ustruct.unpack('!f',rcv_packet1[20:24])[0]
                             rx_padding = rcv_packet1[24:]
-                            rcv_packet1 = str(string_data)[2:-1] + ' ' + str(rx_tx_time) + '' + str(rx_padding)[2:-1]
-                        print('rx. pkt', rcv_packet1, len(rcv_packet1))
+                            rcv_packet1 = str(string_data)[2:-1] + ' ' + str(rx_tx_time) + ' ' + str(rx_padding)[2:-1]
                         # rcv_packet1 = rcv_packet1[2:-1]
                         decode_packet = rcv_packet1.split()
                         if len(decode_packet) >= 5:
@@ -351,12 +351,12 @@ while True:
                         ########### Receiving the Acknowledgement ##########################
                         time.sleep(packet_gap_interval)
                         rcv_packet1 = s.recv(packet_size)
+                        print('length of Ack2', rcv_packet1, len(rcv_packet1))
                         if len(rcv_packet1) == packet_size:
                             string_data = ustruct.unpack('!20s', rcv_packet1[:20])[0]
                             rx_tx_time = ustruct.unpack('!f',rcv_packet1[20:24])[0]
                             rx_padding = rcv_packet1[24:]
-                            rcv_packet1 = str(string_data)[2:-1] + ' ' + str(rx_tx_time) + '' + str(rx_padding)[2:-1]
-                        print('rx. pkt', rcv_packet1, len(rcv_packet1))
+                            rcv_packet1 = str(string_data)[2:-1] + ' ' + str(rx_tx_time) + ' ' + str(rx_padding)[2:-1]
                         # rcv_packet1 = rcv_packet1[2:-1]
                         decode_packet = rcv_packet1.split()
                         print(decode_packet)
@@ -498,7 +498,7 @@ while True:
 
             ########### Packet reception ##########################
             rcv_packet = s.recv(packet_size)
-            print(len(rcv_packet))
+            print('rx. pkt', rcv_packet, len(rcv_packet))
             if len(rcv_packet) > 0:
                 string_data = ustruct.unpack('!15s', rcv_packet[:15])[0]
                 rx_data_number = ustruct.unpack('!B',rcv_packet[15:16])[0]
@@ -506,7 +506,6 @@ while True:
                 rx_tx_time = ustruct.unpack('!f',rcv_packet[19:23])[0]
                 rx_padding = rcv_packet[23:]
                 rcv_packet = str(string_data)[2:-1] + str(rx_data_number) + ' ' + str(rx_sent_time) + ' ' + str(rx_tx_time) + str(rx_padding)[2:-1]
-            print('rx. pkt', rcv_packet, len(rcv_packet))
             # rcv_packet = rcv_packet[2:-1]
             decode_packet = rcv_packet.split()
             print('decoded packet', decode_packet)
@@ -517,12 +516,12 @@ while True:
                     ########### Unicast packet reception ##########################
                     received_full_data.append(receiving_data)
                     ack_packet = ustruct.pack('!20s', decode_packet[1] + ' ' + decode_packet[0] + ' Ack ' + decode_packet[2] + ' ' )
-                    ack_packet += ustruct.pack('!f', float(decode_packet[4])) + ''
+                    ack_packet += ustruct.pack('!f', float(decode_packet[4])) + ' '
                     padding = packet_size - len(ack_packet)
                     zero_padding = '0' * padding
                     ack_packet = ack_packet + zero_padding
                     print('sending ack')
-                    print(ack_packet)
+                    print(ack_packet, len(ack_packet))
                     s.send(ack_packet)
 
                 elif decode_packet[1] == Broadcast_address:
@@ -541,7 +540,7 @@ while True:
             print('Awake_instance {}'.format(Awake_instance))
             print('Source_address {}'.format(source_address))
 
-            if len(decode_packet) >= 5:
+            if len(decode_packet) >= 6:
                 print('Sender_address {}'.format(decode_packet[0]))   ### source address of sender
             print('Alive_time {}'.format(alive_time))
             print('Packets {}'.format(packet_number))
