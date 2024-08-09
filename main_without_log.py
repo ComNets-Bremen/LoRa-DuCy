@@ -45,11 +45,13 @@ bluetooth.deinit()
 
 
 ######### Own node's information #####################
-if get_node_id() == 235968217:
+# if get_node_id() == 235968217:
+if get_node_id() == 3253554266:
     my_number = 1
     source_address = 'Mac' + str(my_number)
     print('I am node Mac1')
-elif get_node_id() == 829745241:
+# elif get_node_id() == 829745241:
+elif get_node_id() == 1883124616:
     my_number = 2
     source_address = 'Mac' + str(my_number)
     print('I am node Mac2')
@@ -103,7 +105,7 @@ phase_lock_optimization = {}
 phase_lock_optimization_time = {}
 max_wait_time = 1 * wakeup_interval
 lora_off_time = 0.6
-packet_gap_interval = 1
+packet_gap_interval = 0.9
 pll_activation = 2.0
 sleep_in_pll = 1.9
 transmission_in_pll = 1.8
@@ -341,7 +343,6 @@ while True:
                         zero_padding = '0' * padding
                         packet = packet1 + zero_padding
                         s.send(packet)
-                        rcv_packet1 = s.recv(packet_size)
                         pycom.rgbled(0x007f7f)
                         print(packet1[:15] + str(ustruct.unpack('!B', packet1[15:16])[0]) + ' ' + str(ustruct.unpack('!B', packet1[17:18])[0]) + ' ' + str(ustruct.unpack('!f', packet1[19:23])[0]) + ' ')
                         transmissions += 1
@@ -352,7 +353,14 @@ while True:
                             print('Full send time', Full_send_time)
 
                         ########### Receiving the Acknowledgement ##########################
-                        time.sleep(packet_gap_interval)
+                        # time.sleep(packet_gap_interval)
+                        try:
+                            s.settimeout(packet_gap_interval)
+                            rcv_packet1 = s.recv(packet_size)
+                            s.settimeout(0)
+                        except TimeoutError:
+                            s.settimeout(0)
+                            rcv_packet1 = s.recv(packet_size)
                         print('length of Ack2', rcv_packet1, len(rcv_packet1))
                         if len(rcv_packet1) == packet_size:
                             string_data = ustruct.unpack('!20s', rcv_packet1[:20])[0]
@@ -447,6 +455,7 @@ while True:
                     chrono2.start()
                     while chrono2.read() < packet_gap_interval:
                         lora = LoRa(power_mode=LoRa.SLEEP, region=LoRa.EU868)
+                    lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
                     chrono2.stop()
                     chrono2.reset()
                     transmissions += 1
