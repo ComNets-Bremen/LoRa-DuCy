@@ -284,6 +284,7 @@ while True:
                                 zero_padding = '0' * padding
                                 packet = packet1 + zero_padding
                                 s.send(packet)
+                                pycom.rgbled(0x007f7f)
                                 transmissions += 1
                                 phase_lock_transmissions += 1
                                 print(packet1[:15] + str(ustruct.unpack('!B', packet1[15:16])[0]) + ' ' + str(ustruct.unpack('!B', packet1[17:18])[0]) + ' ' + str(ustruct.unpack('!f', packet1[19:23])[0]) + ' ')
@@ -340,17 +341,18 @@ while True:
                         zero_padding = '0' * padding
                         packet = packet1 + zero_padding
                         s.send(packet)
+                        rcv_packet1 = s.recv(packet_size)
+                        pycom.rgbled(0x007f7f)
                         print(packet1[:15] + str(ustruct.unpack('!B', packet1[15:16])[0]) + ' ' + str(ustruct.unpack('!B', packet1[17:18])[0]) + ' ' + str(ustruct.unpack('!f', packet1[19:23])[0]) + ' ')
                         transmissions += 1
 
                         if not send_time_updated and chrono.read() > wakeup_interval - safe_time:
                             send_time_updated = True
                             Full_send_time = send_time - 1
-                            print(Full_send_time)
+                            print('Full send time', Full_send_time)
 
                         ########### Receiving the Acknowledgement ##########################
                         time.sleep(packet_gap_interval)
-                        rcv_packet1 = s.recv(packet_size)
                         print('length of Ack2', rcv_packet1, len(rcv_packet1))
                         if len(rcv_packet1) == packet_size:
                             string_data = ustruct.unpack('!20s', rcv_packet1[:20])[0]
@@ -397,7 +399,10 @@ while True:
                 print('Awake_instance {}'.format(Awake_instance))
                 print('Packets {}'.format(packet_number))
                 print('Duty_Cycle {}'.format((alive_time / 3600) * 100))
-                time_left = wakeup_interval - (chrono3.read() % wakeup_interval)
+                if chrono3.read() < wakeup_interval:
+                    time_left = wakeup_interval - (chrono3.read() % wakeup_interval)
+                else:
+                    time_left = 0
                 chrono.stop()
                 chrono.reset()
                 chrono.start()
@@ -408,7 +413,7 @@ while True:
                 lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
                 chrono.stop()
                 chrono.reset()
-                print(chrono3.read())
+                print('Unicast chrono3:', chrono3.read())
 
                 if chrono3.read() > wakeup_interval:
                     insatnce = chrono3.read() // wakeup_interval
@@ -463,7 +468,7 @@ while True:
                 pycom.rgbled(0x007f00)
                 chrono.stop()
                 chrono.reset()
-                print(chrono3.read())
+                print('Broadcast chrono3:', chrono3.read())
                 chrono3.stop()
                 chrono3.reset()
                 print(' ')
@@ -480,7 +485,7 @@ while True:
                 cca_list.append(str(lora.ischannel_free(-100)))
                 if cca_list.count('True') <= 10 and chrono3.read() > (packet_gap_interval + time_now):
                     print(cca_list.count('True'))
-                    print(chrono3.read())
+                    print('Fast sleep chorno3', chrono3.read())
                     noise_found = False
                     print('Noise Detected')
                     noise_detected_counter += 1
@@ -577,7 +582,7 @@ while True:
             pycom.rgbled(0x007f00)
             chrono.stop()
             chrono.reset()
-            print(chrono3.read())
+            print('Rx. chrono3', chrono3.read())
             chrono3.stop()
             chrono3.reset()
             print(' ')
@@ -619,7 +624,7 @@ while True:
             pycom.rgbled(0x007f00)
             chrono.stop()
             chrono.reset()
-            print(chrono3.read())
+            print('No pkt chrono3', chrono3.read())
             chrono3.stop()
             chrono3.reset()
             print(' ')
