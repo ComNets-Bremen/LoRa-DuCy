@@ -7,6 +7,7 @@ import crypto
 from network import WLAN
 from network import Bluetooth
 import machine
+from machine import Pin
 import ustruct, ubinascii, uhashlib
 from lib.varlogger import VarLogger as vl
 import _thread
@@ -16,8 +17,16 @@ import utime
 import ustruct
 
 '''
-Implemented of LoPy4/Fipy with 1.18 pycom-micropython version
+Implemented of LoPy4/Fipy with 1.18.3 pycom-micropython version
 '''
+
+####### for testing purposes ######
+lora_tx = Pin('P21', mode=Pin.OUT, pull=Pin.PULL_UP)
+lora_rx = Pin('P22', mode=Pin.OUT, pull=Pin.PULL_UP)
+cca_pin = Pin('P19', mode=Pin.OUT, pull=Pin.PULL_UP)
+
+####### for testing purposes ######
+
 ######### Utility Functions #######################
 def get_node_id(hex=False):
     """
@@ -45,13 +54,14 @@ bluetooth.deinit()
 
 
 ######### Own node's information #####################
-# if get_node_id() == 235968217:
-if get_node_id() == 3253554266:
+if get_node_id() == 718333200:
+# if get_node_id() == 235968217:   ### sp2
+# if get_node_id() == 3253554266:
     my_number = 1
     source_address = 'Mac' + str(my_number)
     print('I am node Mac1')
-# elif get_node_id() == 829745241:
-elif get_node_id() == 1883124616:
+elif get_node_id() == 1407508338:
+# elif get_node_id() == 1883124616:
     my_number = 2
     source_address = 'Mac' + str(my_number)
     print('I am node Mac2')
@@ -75,8 +85,8 @@ fast_sleep_threshold = 2.5
 transmission_type = 'Unicast'  #Unicast or Broadcast
 num_of_packets = 10
 pll_threshold = 7
-cca_duration = 0.08
-cca_interval = 0.4
+cca_duration = 0.2
+cca_interval = 0.8
 rssi_threshold = 100
 packet_size = 255  # bytes
 
@@ -143,9 +153,11 @@ def packet_check(packet_status, s=Awake_instance, g=packet_number):
 def cca(x=packet_gap_interval, f=lora_off_time, c=cca_list, d=chrono, l=lora, h=cca_duration, m=rssi_threshold, n=cca_interval):
     # print('Checking Channel')
     chrono1.start()
+    cca_pin(True)
     while chrono1.read() < cca_duration:
         c.append(str(lora.ischannel_free(-rssi_threshold)))
         # print('RSSI during CCA {}'.format (lora.stats()[1]))
+    cca_pin(False)
     chrono1.stop()
     chrono1.reset()
     chrono.stop()
@@ -162,10 +174,11 @@ def cca(x=packet_gap_interval, f=lora_off_time, c=cca_list, d=chrono, l=lora, h=
         chrono1.reset()
         chrono.start()
         chrono1.start()
-
+        cca_pin(True)
         while chrono1.read() < cca_duration:
             c.append(str(lora.ischannel_free(-rssi_threshold)))
             # print('RSSI during CCA {}'.format (lora.stats()[1]))
+        cca_pin(False)
         chrono1.stop()
         chrono1.reset()
 
@@ -211,6 +224,7 @@ packet_status = False
 ############# Contiki MAC #########################
 while True:
     try:
+
         ##### for testing purposes ######
         # print('Time since started:', utime.ticks_ms()- testing_start - vl.time_to_write )
         ##### for testing purposes ######
@@ -222,7 +236,9 @@ while True:
         lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
 
         while len(s.recv(packet_size)) > 0:
+            lora_rx(True)
             ss = s.recv(packet_size)
+            lora_rx(False)
             events = lora.events()
 
         # print('Channel Status:', channel_status)
@@ -270,7 +286,9 @@ while True:
                                     padding = packet_size - len(packet1)
                                     zero_padding = '0' * padding
                                     packet = packet1 + zero_padding
+                                    lora_tx(True)
                                     s.send(packet)
+                                    lora_tx(False)
                                     transmissions += 1
                                     phase_lock_transmissions += 1
                                     # print(packet1[:15] + str(ustruct.unpack('!B', packet1[15:16])[0]) + ' ' + str(ustruct.unpack('!B', packet1[17:18])[0]) + ' ' + str(ustruct.unpack('!f', packet1[19:23])[0]) + ' ')
@@ -285,7 +303,9 @@ while True:
                                 padding = packet_size - len(packet1)
                                 zero_padding = '0' * padding
                                 packet = packet1 + zero_padding
+                                lora_tx(True)
                                 s.send(packet)
+                                lora_tx(False)
                                 pycom.rgbled(0x007f7f)
                                 transmissions += 1
                                 phase_lock_transmissions += 1
@@ -306,8 +326,21 @@ while True:
                             # print(Full_send_time)
 
                         ########### Receiving the Acknowledgement ##########################
-                        time.sleep(packet_gap_interval)
-                        rcv_packet1 = s.recv(packet_size)
+                        # time.sleep(packet_gap_interval)
+                        # lora_rx(True)
+                        # rcv_packet1 = s.recv(packet_size)
+                        # lora_rx(False)
+                        try:
+                            s.settimeout(packet_gap_interval)
+                            lora_rx(True)
+                            rcv_packet1 = s.recv(packet_size)
+                            lora_rx(False)
+                            s.settimeout(0)
+                        except TimeoutError:
+                            s.settimeout(0)
+                            lora_rx(True)
+                            rcv_packet1 = s.recv(packet_size)
+                            lora_rx(False)
                         # print('len Ack1', rcv_packet1, len(rcv_packet1))
                         if len(rcv_packet1) == packet_size:
                             string_data = ustruct.unpack('!20s', rcv_packet1[:20])[0]
@@ -342,7 +375,9 @@ while True:
                         padding = packet_size - len(packet1)
                         zero_padding = '0' * padding
                         packet = packet1 + zero_padding
+                        lora_tx(True)
                         s.send(packet)
+                        lora_tx(False)
                         pycom.rgbled(0x007f7f)
                         # print(packet1[:15] + str(ustruct.unpack('!B', packet1[15:16])[0]) + ' ' + str(ustruct.unpack('!B', packet1[17:18])[0]) + ' ' + str(ustruct.unpack('!f', packet1[19:23])[0]) + ' ')
                         transmissions += 1
@@ -354,14 +389,21 @@ while True:
 
                         ########### Receiving the Acknowledgement ##########################
                         # time.sleep(packet_gap_interval)
+                        # lora_rx(True)
+                        # rcv_packet1 = s.recv(packet_size)
+                        # lora_rx(False)
                         try:
                             s.settimeout(packet_gap_interval)
+                            lora_rx(True)
                             rcv_packet1 = s.recv(packet_size)
+                            lora_rx(False)
                             s.settimeout(0)
                         except TimeoutError:
                             s.settimeout(0)
+                            lora_rx(True)
                             rcv_packet1 = s.recv(packet_size)
-                        # print('length of Ack2', rcv_packet1, len(rcv_packet1))
+                            lora_rx(False)
+                        print('length of Ack2', rcv_packet1, len(rcv_packet1))
                         if len(rcv_packet1) == packet_size:
                             string_data = ustruct.unpack('!20s', rcv_packet1[:20])[0]
                             rx_tx_time = ustruct.unpack('!f',rcv_packet1[20:24])[0]
@@ -384,6 +426,7 @@ while True:
                                 # print(phase_lock_optimization)
                                 # print(phase_lock_optimization_time)
                                 print('Ack received for packet {}'.format(packet_number))
+
                                 ack_data_packets.append(rcv_packet1)
                                 print(len(ack_data_packets))
                                 packet_number += 1
@@ -450,7 +493,9 @@ while True:
                     zero_padding = '0' * padding
                     packet = packet1 + zero_padding
                     lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
+                    lora_tx(True)
                     s.send(packet)
+                    lora_tx(False)
                     #    print(packet1[:15] + str(ustruct.unpack('!B', packet1[15:16])[0]) + ' ' + str(ustruct.unpack('!B', packet1[17:18])[0]) + ' ' + str(ustruct.unpack('!f', packet1[19:23])[0]) + ' ')
                     chrono2.start()
                     while chrono2.read() < packet_gap_interval:
@@ -511,7 +556,9 @@ while True:
 
 
             ########### Packet reception ##########################
+            lora_rx(True)
             rcv_packet = s.recv(packet_size)
+            lora_rx(False)
             #    print('rx. pkt', rcv_packet, len(rcv_packet))
             if len(rcv_packet) > 0:
                 string_data = ustruct.unpack('!15s', rcv_packet[:15])[0]
@@ -536,7 +583,9 @@ while True:
                     ack_packet = ack_packet + zero_padding
                     print('sending ack')
                     # print(ack_packet, len(ack_packet))
+                    lora_tx(True)
                     s.send(ack_packet)
+                    lora_tx(False)
 
                 elif decode_packet[1] == Broadcast_address:
                     ########### Broadcast packet reception ##########################
@@ -650,3 +699,4 @@ while True:
         print('Shutting down due to following error in main loop:')
         print(sys.print_exception(e))
         sys.exit()
+
