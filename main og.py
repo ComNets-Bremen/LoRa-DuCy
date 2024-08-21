@@ -78,8 +78,8 @@ transmission_in_pll=1.8
 
 ############## Delay to avoid CCA overalap ############
 number2=(wakeup_interval-2)/10
-print((my_number-1)*number2)
-time.sleep((my_number-1)*number2)
+# print((my_number-1)*number2)
+# time.sleep((my_number-1)*number2)
 
 
 
@@ -319,7 +319,12 @@ while True:
             print('Awake_instance {}'.format (Awake_instance))
             print('Packets {}'.format (packet_number))
             print('Duty_Cycle {}'.format ((alive_time/3600)*100))
-            time_left=wakeup_interval-(chrono3.read()%wakeup_interval)
+            
+            if chrono3.read() < wakeup_interval:
+                time_left = wakeup_interval - (chrono3.read() % wakeup_interval)
+            else:
+                time_left = 0
+                
             chrono.stop()
             chrono.reset()
             chrono.start()
