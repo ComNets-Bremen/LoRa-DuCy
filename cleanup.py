@@ -1,7 +1,7 @@
 import os
 
 
-def clean(numFiles):
+def clean(numFiles=100):
     for i in range(numFiles):
         try:
             os.remove('varlist{}'.format(i))
