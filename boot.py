@@ -37,9 +37,12 @@ def get_node_id(hex=False):
         return int(node_id, 16)
 
 ######### Own node's information #####################
-if get_node_id() == 235968217:
+if get_node_id() == 718333200:
+# if get_node_id() == 235968217:   ### sp2
+# if get_node_id() == 3253554266:
     print('I am node Mac1')
-elif get_node_id() == 829745241:
+elif get_node_id() == 1407508338:
+# elif get_node_id() == 1883124616:
     print('I am node Mac2')
 elif get_node_id() == 50989579:
     print('I am node Mac3')

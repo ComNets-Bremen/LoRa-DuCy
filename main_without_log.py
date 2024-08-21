@@ -85,8 +85,8 @@ fast_sleep_threshold = 2.5
 transmission_type = 'Unicast'  #Unicast or Broadcast
 num_of_packets = 10
 pll_threshold = 7
-cca_duration = 0.2
-cca_interval = 0.8
+cca_duration = 0.3
+cca_interval = 0.85
 rssi_threshold = 100
 packet_size = 255  # bytes
 
