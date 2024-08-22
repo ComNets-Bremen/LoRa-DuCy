@@ -70,7 +70,7 @@ elif get_node_id() == 50989579:
     source_address = 'Mac' + str(my_number)
     print('I am node Mac3')
 
-number_of_neighbours = 1
+number_of_neighbours = 2
 
 
 ######### Initialize the timers #######################
@@ -84,7 +84,7 @@ wakeup_interval = 20
 fast_sleep_threshold = 2.5
 transmission_type = 'Unicast'  #Unicast or Broadcast
 num_of_packets = 10
-pll_threshold = 4
+pll_threshold = 7
 cca_duration = 0.3
 cca_interval = 0.85
 rssi_threshold = 100
@@ -117,7 +117,7 @@ max_wait_time = 1 * wakeup_interval
 lora_off_time = 0.6
 packet_gap_interval = 0.9
 pll_activation = 2.0
-sleep_in_pll = 2.5
+sleep_in_pll = 2.6
 transmission_in_pll = 3
 
 ############## Delay to avoid CCA overlap ############
