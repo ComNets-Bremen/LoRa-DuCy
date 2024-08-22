@@ -1,4 +1,3 @@
-
 from network import LoRa
 import socket
 import time
@@ -38,7 +37,7 @@ chrono3=Timer.Chrono()
 ############ Configurable Parameters #################
 wakeup_interval=20
 fast_sleep_threshold=2.5
-transmission_type='Unicast'#Unicast or Broadcast
+transmission_type='Broadcast'#Unicast or Broadcast
 num_of_packets=4
 pll_threshold=7
 cca_duration=0.08
@@ -79,8 +78,8 @@ transmission_in_pll=1.8
 
 ############## Delay to avoid CCA overalap ############
 number2=(wakeup_interval-2)/10
-print((my_number-1)*number2)
-time.sleep((my_number-1)*number2)
+# print((my_number-1)*number2)
+# time.sleep((my_number-1)*number2)
 
 
 
@@ -319,7 +318,12 @@ while True:
             print('Awake_instance {}'.format (Awake_instance))
             print('Packets {}'.format (packet_number))
             print('Duty_Cycle {}'.format ((alive_time/3600)*100))
-            time_left=wakeup_interval-(chrono3.read()%wakeup_interval)
+            
+            if chrono3.read() < wakeup_interval:
+                time_left = wakeup_interval - (chrono3.read() % wakeup_interval)
+            else:
+                time_left = 0
+                
             chrono.stop()
             chrono.reset()
             chrono.start()
@@ -350,6 +354,7 @@ while True:
 
             ########### Broadcast Transmission continue during full wake up interval ##########################
             while chrono.read()< wakeup_interval-safe_time:
+                print('Broadcast loop', chrono.read(), wakeup_interval-safe_time)
                 data = ' Data '
                 packet1=source_address+' ' +' '+ destination_address+' ' + data + str(packet_number) +' '+str(send_time)+' '
                 padding=packet_size-len(packet1)
