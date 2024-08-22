@@ -9,6 +9,7 @@ from network import Bluetooth
 import machine
 from machine import Pin
 import ustruct, ubinascii, uhashlib
+
 from lib.varlogger import VarLogger as vl
 import _thread
 import gc
@@ -237,6 +238,7 @@ while True:
 
         while len(s.recv(packet_size)) > 0:
             lora_rx(True)
+            print('rx 1')
             ss = s.recv(packet_size)
             lora_rx(False)
             events = lora.events()
@@ -324,6 +326,7 @@ while True:
                             break
                         else:
                             saved_transmissions += 1
+                            
                         if not send_time_updated and chrono.read() > wakeup_interval - safe_time:
                             send_time_updated = True
                             Full_send_time = send_time - 1
@@ -337,12 +340,14 @@ while True:
                         try:
                             s.settimeout(packet_gap_interval)
                             lora_rx(True)
+                            print('rx 2')
                             rcv_packet1 = s.recv(packet_size)
                             lora_rx(False)
                             s.settimeout(0)
                         except TimeoutError:
                             s.settimeout(0)
                             lora_rx(True)
+                            print('rx 3')
                             rcv_packet1 = s.recv(packet_size)
                             lora_rx(False)
                         print('len of Ack1', len(rcv_packet1))
@@ -402,12 +407,14 @@ while True:
                         try:
                             s.settimeout(packet_gap_interval)
                             lora_rx(True)
+                            print('rx 4')
                             rcv_packet1 = s.recv(packet_size)
                             lora_rx(False)
                             s.settimeout(0)
                         except TimeoutError:
                             s.settimeout(0)
                             lora_rx(True)
+                            print('rx 5')
                             rcv_packet1 = s.recv(packet_size)
                             lora_rx(False)
                         print('len of Ack2', len(rcv_packet1))
@@ -566,18 +573,21 @@ while True:
 
             ########### Packet reception ##########################
             # lora_rx(True)
+            # print('rx 6')
             # rcv_packet = s.recv(packet_size)
             # lora_rx(False)
 
             try:
                 s.settimeout(packet_gap_interval)
                 lora_rx(True)
+                print('rx 6')
                 rcv_packet = s.recv(packet_size)
                 lora_rx(False)
                 s.settimeout(0)
             except TimeoutError:
                 s.settimeout(0)
                 lora_rx(True)
+                print('rx 7')
                 rcv_packet = s.recv(packet_size)
                 lora_rx(False)
 
