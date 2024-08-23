@@ -118,8 +118,8 @@ max_wait_time = 1 * wakeup_interval
 lora_off_time = 0.6
 packet_gap_interval = 0.9
 pll_activation = 2.0
-sleep_in_pll = 2.6
-transmission_in_pll = 3
+sleep_in_pll = 3
+transmission_in_pll = 4
 
 ############## Delay to avoid CCA overlap ############
 # number2 = (wakeup_interval - 2) / 10
@@ -351,7 +351,7 @@ while True:
                             rcv_packet1 = s.recv(packet_size)
                             lora_rx(False)
                         print('len of Ack1', len(rcv_packet1))
-                        if len(rcv_packet1) > 0:
+                        if len(rcv_packet1) >= 22:
                             string_data = ustruct.unpack('!14s', rcv_packet1[:14])[0]
                             data_num = ustruct.unpack('!B', rcv_packet1[14:15])[0]
                             pkt_num = ustruct.unpack('!B', rcv_packet1[16:17])[0]
@@ -418,7 +418,7 @@ while True:
                             rcv_packet1 = s.recv(packet_size)
                             lora_rx(False)
                         print('len of Ack2', len(rcv_packet1))
-                        if len(rcv_packet1) > 0:
+                        if len(rcv_packet1) >= 22:
                             string_data = ustruct.unpack('!14s', rcv_packet1[:14])[0]
                             data_num = ustruct.unpack('!B', rcv_packet1[14:15])[0]
                             pkt_num = ustruct.unpack('!B', rcv_packet1[16:17])[0]
@@ -591,7 +591,7 @@ while True:
                 rcv_packet = s.recv(packet_size)
                 lora_rx(False)
 
-            if len(rcv_packet) > 0:
+            if len(rcv_packet) >= 22:
                 string_data = ustruct.unpack('!17s', rcv_packet[:17])[0]
                 rx_data_number = ustruct.unpack('!B',rcv_packet[17:18])[0]
                 rx_sent_time = ustruct.unpack('!B',rcv_packet[19:20])[0]
