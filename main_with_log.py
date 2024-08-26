@@ -539,7 +539,7 @@ while True:
 
                 else:
                     ########### Transmission without PLL ##########################
-                    while not ack and chrono.read() < max_wait_time:
+                    while not ack and chrono.read() < max_wait_time-safe_time:
                         ########### Transmission continue until the acknowledgement ##########################
                         packet1 = ustruct.pack('!17s', source_address + ' ' + ' ' + destination_address + ' ' + data)
                         packet1 += ustruct.pack('!B', packet_number) + ' ' + ustruct.pack('!B', send_time) + ' ' + ustruct.pack('!f',round(chrono.read(),4)) + ' '
