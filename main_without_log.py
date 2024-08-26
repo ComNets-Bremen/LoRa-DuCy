@@ -85,7 +85,7 @@ wakeup_interval = 20
 fast_sleep_threshold = 2.5
 transmission_type = 'Unicast'  #Unicast or Broadcast
 num_of_packets = 10
-pll_threshold = 7
+pll_threshold = 4
 cca_duration = 0.3
 cca_interval = 0.85
 rssi_threshold = 100
@@ -119,7 +119,7 @@ lora_off_time = 0.6
 packet_gap_interval = 0.9
 pll_activation = 2.0
 sleep_in_pll = 3
-transmission_in_pll = 4
+transmission_in_pll = 2.9
 
 ############## Delay to avoid CCA overlap ############
 # number2 = (wakeup_interval - 2) / 10
@@ -479,7 +479,7 @@ while True:
                 lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
                 chrono.stop()
                 chrono.reset()
-                #    print('Unicast chrono3:', chrono3.read())
+                print('Unicast chrono3:', chrono3.read())
 
                 if chrono3.read() > wakeup_interval:
                     insatnce = chrono3.read() // wakeup_interval
@@ -538,7 +538,7 @@ while True:
                 pycom.rgbled(0x007f00)
                 chrono.stop()
                 chrono.reset()
-                #    print('Broadcast chrono3:', chrono3.read())
+                print('Broadcast chrono3:', chrono3.read())
                 chrono3.stop()
                 chrono3.reset()
                 print(' ')
@@ -674,7 +674,7 @@ while True:
             pycom.rgbled(0x007f00)
             chrono.stop()
             chrono.reset()
-            #    print('Rx. chrono3', chrono3.read())
+            print('Rx. chrono3', chrono3.read())
             chrono3.stop()
             chrono3.reset()
             print(' ')
