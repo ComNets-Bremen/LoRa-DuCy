@@ -95,6 +95,12 @@ elif get_node_id() == 50989579:
     source_address = 'Mac' + str(my_number)
     vl.log(var='source_address', fun=_fun_name, clas=_cls_name, th=_thread_id, save=True)
     print('I am node Mac3')
+else:
+    my_number = 1
+    vl.log(var='my_number', fun=_fun_name, clas=_cls_name, th=_thread_id, save=True)
+    source_address = 'Mac' + str(my_number)
+    vl.log(var='source_address', fun=_fun_name, clas=_cls_name, th=_thread_id, save=True)
+    print('I am Test Node with ID Mac1')
 
 number_of_neighbours = 2
 vl.log(var='number_of_neighbours', fun=_fun_name, clas=_cls_name, th=_thread_id, save=True)
@@ -119,11 +125,11 @@ transmission_type = 'Unicast'  #Unicast or Broadcast
 vl.log(var='transmission_type', fun=_fun_name, clas=_cls_name, th=_thread_id, save=True)
 num_of_packets = 10
 vl.log(var='num_of_packets', fun=_fun_name, clas=_cls_name, th=_thread_id, save=True)
-pll_threshold = 4
+pll_threshold = 7
 vl.log(var='pll_threshold', fun=_fun_name, clas=_cls_name, th=_thread_id, save=True)
-cca_duration = 0.3
+cca_duration = 0.08
 vl.log(var='cca_duration', fun=_fun_name, clas=_cls_name, th=_thread_id, save=True)
-cca_interval = 0.85
+cca_interval = 0.4
 vl.log(var='cca_interval', fun=_fun_name, clas=_cls_name, th=_thread_id, save=True)
 rssi_threshold = 100
 vl.log(var='rssi_threshold', fun=_fun_name, clas=_cls_name, th=_thread_id, save=True)

@@ -70,6 +70,10 @@ elif get_node_id() == 50989579:
     my_number = 3
     source_address = 'Mac' + str(my_number)
     print('I am node Mac3')
+else:
+    my_number = 1
+    source_address = 'Mac' + str(my_number)
+    print('I am Test Node with ID Mac1')
 
 number_of_neighbours = 2
 
