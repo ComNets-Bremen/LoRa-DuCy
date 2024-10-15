@@ -46,3 +46,5 @@ elif get_node_id() == 1407508338:
     print('I am node Mac2')
 elif get_node_id() == 50989579:
     print('I am node Mac3')
+else:
+    print('I am TEST node ')
