@@ -66,7 +66,8 @@ elif get_node_id() == 1407508338:
     my_number = 2
     source_address = 'Mac' + str(my_number)
     print('I am node Mac2')
-elif get_node_id() == 50989579:
+# elif get_node_id() == 50989579:
+elif get_node_id() == 1073140922:
     my_number = 3
     source_address = 'Mac' + str(my_number)
     print('I am node Mac3')

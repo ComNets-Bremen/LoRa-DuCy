@@ -89,7 +89,8 @@ elif get_node_id() == 1407508338:
     source_address = 'Mac' + str(my_number)
     vl.log(var='source_address', fun=_fun_name, clas=_cls_name, th=_thread_id, save=True)
     print('I am node Mac2')
-elif get_node_id() == 50989579:
+# elif get_node_id() == 50989579:
+elif get_node_id() == 1073140922:
     my_number = 3
     vl.log(var='my_number', fun=_fun_name, clas=_cls_name, th=_thread_id, save=True)
     source_address = 'Mac' + str(my_number)
