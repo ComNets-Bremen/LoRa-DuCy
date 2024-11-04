@@ -44,7 +44,8 @@ if get_node_id() == 718333200:
 elif get_node_id() == 1407508338:
 # elif get_node_id() == 1883124616:
     print('I am node Mac2')
-elif get_node_id() == 50989579:
+# elif get_node_id() == 50989579:
+elif get_node_id() == 1073140922:
     print('I am node Mac3')
 else:
-    print('I am TEST node ')
+    print('I am TEST node: ', get_node_id())
