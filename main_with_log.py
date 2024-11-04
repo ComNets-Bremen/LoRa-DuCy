@@ -17,6 +17,15 @@ import sys
 import utime
 import ustruct
 
+#### measuring performance metrics ####
+import micropython
+import gc
+start_time_exe = utime.ticks_cpu()  # Start time measurement
+gc.collect()  # Force garbage collection to check memory usage
+avg_memory = 0
+total_gc = 2561344 ### total memory allocated from micropython.nen_info()
+total_interval_test = 0
+
 '''
 Implemented of LoPy4/Fipy with 1.18.3 pycom-micropython version
 '''
@@ -346,6 +355,11 @@ while True:
         vl.log(var='packet_status', fun=_fun_name, clas=_cls_name, th=_thread_id, save=False)
         lora = LoRa(power_mode=LoRa.ALWAYS_ON, region=LoRa.EU868)
         vl.log(var='lora', fun=_fun_name, clas=_cls_name, th=_thread_id, save=False)
+
+        gc.collect()
+        total_interval_test += 1
+        avg_memory += total_gc - gc.mem_free()   ### accumulate memory usage for all iterations
+        print('avg_memory for ', total_interval_test, ': ', total_gc - gc.mem_free())
 
         while len(s.recv(packet_size)) > 0:
             lora_rx(True)
@@ -879,20 +893,20 @@ while True:
             # #    print('Packets {}'.format(packet_number))
             # #    print('Duty_Cycle {}'.format((alive_time/3600)*100))
 
-            # if transmission_type == 'Unicast':
-            #     ########### Unicast Information ##########################
-            #     #    print('Packets_Received {}'.format(len(received_full_data)))
-            #     #    print('failed_attempts {}'.format(failed_attempts))
-            #     #    print('phase_lock_time_saving {}'.format(phase_lock_time_saving))
-            #     #    print('phase_lock_cca_fails {}'.format(phase_lock_cca_fails))
-            #     #    print('Optimized_Duty_Cycle_Unicast {}'.format(((alive_time - phase_lock_time_saving) / 3600) * 100))
-            #     #    print('Transmissions {}'.format(transmissions + saved_transmissions))
-            #     #    print('Optimized_Transmissions {}'.format(transmissions))
-            # else:
-            #     ########### Broadcast Information ##########################
-            #     #    print('Optimized_Duty_Cycle_broadcast {}'.format(((alive_time - broadcast_time_save) / 3600) * 100))
-            #     #    print('Packets_Received {}'.format(len(received_full_data)))
-            #     #    print('Transmissions {}'.format(transmissions))
+            if transmission_type == 'Unicast':
+                ########### Unicast Information ##########################
+                   print('Packets_Received {}'.format(len(received_full_data)))
+                   print('failed_attempts {}'.format(failed_attempts))
+                   print('phase_lock_time_saving {}'.format(phase_lock_time_saving))
+                   print('phase_lock_cca_fails {}'.format(phase_lock_cca_fails))
+                   print('Optimized_Duty_Cycle_Unicast {}'.format(((alive_time - phase_lock_time_saving) / 3600) * 100))
+                   print('Transmissions {}'.format(transmissions + saved_transmissions))
+                   print('Optimized_Transmissions {}'.format(transmissions))
+            else:
+                ########### Broadcast Information ##########################
+                   print('Optimized_Duty_Cycle_broadcast {}'.format(((alive_time - broadcast_time_save) / 3600) * 100))
+                   print('Packets_Received {}'.format(len(received_full_data)))
+                   print('Transmissions {}'.format(transmissions))
 
             # #    print('noise_detected_counter {}'.format(noise_detected_counter))
             # #    print('fast_sleep_time_save {}'.format(fast_sleep_time_save))
@@ -932,20 +946,20 @@ while True:
             #    print('Packets {}'.format(packet_number))
             #    print('Duty_Cycle {}'.format((alive_time / 3600) * 100))
 
-            # if transmission_type == 'Unicast':
-            #     ########### Unicast Information ##########################
-            #     #    print('Packets_Received {}'.format(len(received_full_data)))
-            #     #    print('failed_attempts {}'.format(failed_attempts))
-            #     #    print('phase_lock_time_saving {}'.format(phase_lock_time_saving))
-            #     #    print('phase_lock_cca_fails {}'.format(phase_lock_cca_fails))
-            #     #    print('Optimized_Duty_Cycle_Unicast {}'.format(((alive_time - phase_lock_time_saving) / 3600) * 100))
-            #     #    print('Transmissions {}'.format(transmissions + saved_transmissions))
-            #     #    print('Optimized_Transmissions {}'.format(transmissions))
-            # else:
-            #     ########### Broadcast Information ##########################
-            #     #    print('Optimized_Duty_Cycle_broadcast {}'.format(((alive_time - broadcast_time_save) / 3600) * 100))
-            #     #    print('Packets_Received {}'.format(len(received_full_data)))
-            #     #    print('Transmissions {}'.format(transmissions))
+            if transmission_type == 'Unicast':
+                ########### Unicast Information ##########################
+                   print('Packets_Received {}'.format(len(received_full_data)))
+                   print('failed_attempts {}'.format(failed_attempts))
+                   print('phase_lock_time_saving {}'.format(phase_lock_time_saving))
+                   print('phase_lock_cca_fails {}'.format(phase_lock_cca_fails))
+                   print('Optimized_Duty_Cycle_Unicast {}'.format(((alive_time - phase_lock_time_saving) / 3600) * 100))
+                   print('Transmissions {}'.format(transmissions + saved_transmissions))
+                   print('Optimized_Transmissions {}'.format(transmissions))
+            else:
+                ########### Broadcast Information ##########################
+                   print('Optimized_Duty_Cycle_broadcast {}'.format(((alive_time - broadcast_time_save) / 3600) * 100))
+                   print('Packets_Received {}'.format(len(received_full_data)))
+                   print('Transmissions {}'.format(transmissions))
             # #    print('noise_detected_counter {}'.format(noise_detected_counter))
             # #    print('fast_sleep_time_save {}'.format(fast_sleep_time_save))
             Awake_instance += 1
@@ -967,7 +981,19 @@ while True:
             print(' ')
         
         ##### for testing purposes
-        if (utime.ticks_ms() - testing_start - vl.time_to_write)/1000 >= 600: # 10 minutes
+        # if (utime.ticks_ms() - testing_start - vl.time_to_write)/1000 >= 600: # 10 minutes
+        if failed_attempts >= num_of_packets:
+            print('Timer deinitiated')
+
+            gc.collect()
+            end_time_exe = utime.ticks_cpu()  # End time measurement
+            execution_time = utime.ticks_diff( start_time_exe, end_time_exe)   #### in newer version of micropython start time is at the end
+            memory_usage = total_gc - gc.mem_free()
+            avg_memory /= total_interval_test
+            print("Execution Time:", execution_time, 'cpu ticks')
+            print("Memory Usage:", memory_usage, 'bytes')
+            print("Average Memory Usage:", avg_memory, 'bytes')
+
             vl.save()
             print('Timer deinitiated')
             sys.exit()
